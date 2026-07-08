@@ -594,6 +594,8 @@
     .playhead-dot{ r:12; }
   }
 
+  .clean-scroll-toggle{ display:none; }
+
   @media (max-width: 640px){
     body{ padding:12px; }
     .app-header{ margin-bottom:16px; }
@@ -643,7 +645,6 @@
       max-width:100%;
     }
   }
-  .clean-scroll-toggle{ display:none; }
 </style>
 </head>
 <body>
@@ -1251,9 +1252,26 @@ function co2DeadZoneNote(curVal, th){
   return inDeadZone ? ` <span style="color:var(--warn);">(히스테리시스 구간 — 아직 임계값을 넘지 않아 직전 상태 유지)</span>` : '';
 }
 
+// 모바일에서는 그래프 표시 범위(xmin~xmax)가 SEG22 기준으로 좁아지므로,
+// 테스트 슬라이더의 min/max도 같이 맞추고 현재 값이 범위를 벗어나면 안쪽으로 당겨온다.
+function syncCo2SliderRange(geo){
+  const slider = document.getElementById('co2Slider');
+  slider.min = geo.xmin;
+  slider.max = geo.xmax;
+  const val = Number(slider.value);
+  const clamped = Math.min(Math.max(val, geo.xmin), geo.xmax);
+  if(clamped !== val){
+    slider.value = clamped;
+    co2PrevVal = clamped;
+    document.getElementById('co2SliderVal').textContent = clamped;
+  }
+}
+
 function renderCo2Panel(){
   const th = getCo2Thresholds();
-  const { xmin, xmax, W, H, padL, padT, plotW, plotH, xPix, centerY } = getCo2Geometry(th);
+  const geo = getCo2Geometry(th);
+  const { xmin, xmax, W, H, padL, padT, plotW, plotH, xPix, centerY } = geo;
+  syncCo2SliderRange(geo);
   document.getElementById('co2Svg').setAttribute('viewBox', `0 0 ${W} ${H}`);
 
   let svg = '';
