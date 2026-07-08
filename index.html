@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
 <title>삼성 에어콤보 옵션코드 생성기</title>
 <script>
 (function(){
@@ -196,6 +197,16 @@
     padding:10px 12px;
     margin-bottom:16px;
   }
+  .format-hint-tip{
+    font-size:13px;
+    font-weight:700;
+    color:var(--accent-dark);
+    background:var(--accent-soft);
+    border:1px solid var(--accent);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:16px;
+  }
   .field-grid{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
@@ -208,10 +219,6 @@
     border-radius:10px;
     padding:12px 14px;
     transition:background .15s, border-color .15s;
-  }
-  .field.changed{
-    border-color:var(--changed-border);
-    background:var(--changed-bg);
   }
   .field label{
     display:block;
@@ -232,18 +239,19 @@
     border-radius:4px;
     margin-right:6px;
   }
-  .field select{
-    width:100%;
-    padding:8px;
+  .field select, .viz-seg-item select, .viz-controls select{
+    padding:7px 8px;
     border:1px solid var(--border);
     border-radius:6px;
     font-size:13px;
     font-family:var(--mono);
     background:var(--input-bg);
     color:var(--text);
-    transition:background .15s, border-color .15s;
   }
-  .field.changed select{
+  .field select, .viz-seg-item select{ width:100%; }
+  .field select{ transition:background .15s, border-color .15s; }
+  .field.changed, .viz-seg-item.changed,
+  .field.changed select, .viz-seg-item.changed select{
     border-color:var(--changed-border);
     background:var(--changed-bg);
   }
@@ -368,6 +376,20 @@
     justify-content:flex-end;
     margin-top:6px;
   }
+  .page-footer{
+    max-width:980px;
+    margin:28px auto 12px;
+    padding:0 24px;
+    text-align:center;
+    font-size:11px;
+    color:var(--muted);
+  }
+  .page-footer-disclaimer{
+    margin-top:4px;
+    font-size:10px;
+    opacity:0.85;
+    line-height:1.5;
+  }
   .toast{
     position:fixed;
     bottom:20px;
@@ -384,7 +406,7 @@
   }
   .toast.show{ opacity:1; }
 
-  textarea#verifyInput{
+  textarea#verifyInput, #cleanCustomInput{
     width:100%;
     padding:10px;
     border:1px solid var(--border);
@@ -395,6 +417,15 @@
     color:var(--text);
     resize:vertical;
   }
+  #cleanCustomWrap{ margin-top:10px; }
+  .clean-custom-msg{
+    font-size:12px;
+    margin-top:4px;
+    min-height:16px;
+    color:var(--muted);
+  }
+  .clean-custom-msg.error{ color:#b3261e; }
+  :root[data-theme="dark"] .clean-custom-msg.error{ color:#ff8a80; }
   .banner{
     padding:10px 12px;
     border-radius:8px;
@@ -510,15 +541,6 @@
     color:var(--muted);
   }
   .viz-hint{ font-size:12px; color:var(--muted); }
-  .viz-controls select{
-    padding:7px 8px;
-    border:1px solid var(--border);
-    border-radius:6px;
-    font-size:13px;
-    font-family:var(--mono);
-    background:var(--input-bg);
-    color:var(--text);
-  }
   .viz-seg-row{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
@@ -531,30 +553,12 @@
     padding:6px;
     transition:background .15s, border-color .15s;
   }
-  .viz-seg-item.changed{
-    border-color:var(--changed-border);
-    background:var(--changed-bg);
-  }
   .viz-seg-item label{
     display:block;
     font-size:12px;
     font-weight:600;
     color:var(--muted);
     margin-bottom:4px;
-  }
-  .viz-seg-item select{
-    width:100%;
-    padding:7px;
-    border:1px solid var(--border);
-    border-radius:6px;
-    font-size:13px;
-    font-family:var(--mono);
-    background:var(--input-bg);
-    color:var(--text);
-  }
-  .viz-seg-item.changed select{
-    border-color:var(--changed-border);
-    background:var(--changed-bg);
   }
   .co2-trend-indicator{
     font-weight:700;
@@ -568,10 +572,10 @@
   <div class="app-header">
     <div class="eyebrow">Service Mode · Option Code Utility</div>
     <div class="title-row">
-      <h1>에어콤보 옵션코드 생성기</h1>
+      <h1>삼성 비스포크 AI 에어콤보 옵션코드 생성기</h1>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="테마 전환">🌙</button>
     </div>
-    <div class="subtitle">삼성 비스포크 AI 에어콤보 서비스모드 옵션코드 — 02 계열 / 05 계열 설치 옵션</div>
+    <div class="subtitle">서비스모드 내 02 계열 / 05 계열 설치 옵션 생성 및 검증</div>
   </div>
 
   <div class="tabs">
@@ -582,6 +586,7 @@
   </div>
 
   <div class="format-hint" id="formatHint"></div>
+  <div class="format-hint-tip" id="formatHintTip"></div>
 
   <section id="panel-02" class="panel active">
     <div class="field-grid" id="fields-02"></div>
@@ -633,11 +638,16 @@
       <div class="viz-controls">
         <label>시나리오: </label>
         <select id="cleanScenarioSelect">
-          <option value="standard">표준 (상승 후 하강)</option>
-          <option value="blip">짧은 초과 (디바운스 확인)</option>
-          <option value="oscillate">반복 전환 (여러 번 오르내림)</option>
-          <option value="gradual">완만한 변화 (근접 유지 후 통과)</option>
+          <option value="gradual" selected>현실적인 패턴 (낮았다가 서서히 상승)</option>
+          <option value="standard">급격한 변화 (테스트 패턴)</option>
+          <option value="blip">잠시 튐 (디바운스 확인)</option>
+          <option value="oscillate">오락가락 (여러 번 오르내림)</option>
         </select>
+        <label><input type="checkbox" id="cleanCustomizeToggle"> 커스터마이즈</label>
+      </div>
+      <div id="cleanCustomWrap" style="display:none;">
+        <textarea id="cleanCustomInput" rows="2" placeholder="예) [[0,600],[10,800],[30,600]]"></textarea>
+        <div class="clean-custom-msg" id="cleanCustomMsg"></div>
       </div>
       <svg id="cleanSvg" viewBox="0 0 860 284" class="viz-svg"></svg>
       <div class="viz-controls">
@@ -678,6 +688,11 @@
     </div>
   </div>
 </div>
+
+<footer class="page-footer">
+  <div>Made by H.I. Park &amp; J.K · 2026</div>
+  <div class="page-footer-disclaimer">이 도구는 삼성전자와 무관한 개인 제작 도구이며 공식 지원을 받지 않습니다. 서비스모드 옵션 변경은 본인 책임하에 진행해주세요 — 잘못된 설정은 기기 오동작을 유발할 수 있습니다.</div>
+</footer>
 
 <div class="toast" id="toast">복사되었습니다</div>
 
@@ -736,21 +751,24 @@ const SERIES = {
     formatHint: '옵션 No. 형식: 02XXXX-1XXXXX-2XXXXX-3XXXXX (기본값 020010-1A9A30-201207-320000)',
     fixedMap: {1:'0',2:'2',3:'0',6:'0',7:'1',12:'0',13:'2',14:'0',17:'0',19:'3',21:'0',22:'0',23:'0',24:'0'},
     fields: [
-      {seg:4, label:'운전모드', options:[{value:'0',text:'정온제습'},{value:'1',text:'냉방제습'}], default:'0'},
+      {seg:4, label:'운전모드', options:[{value:'0',text:'정온제습'},{value:'1',text:'냉방제습'}], default:'0',
+        note:'제습 동작 시 SA에서 토출되는 바람의 온도'},
       {seg:5, label:'중앙제어', options:[{value:'0',text:'사용안함'},{value:'1',text:'사용'}], default:'1'},
       {seg:8, label:'필터교체 알람 (전열환기)', options:hexOptions(10,10), default:'A'},
       {seg:9, label:'필터교체 알람 (보통환기)', options:hexOptions(30,10), default:'9'},
       {seg:10, label:'필터교체 알람 (전열환기)', options:hexOptions(80,10), default:'A',
-        note:'설명서 원문에 SEG8과 동일한 명칭으로 표기되어 있습니다.'},
+        note:'설명서에 SEG8과 동일한 명칭으로 표기되어 있음'},
       {seg:11, label:'필터알람 해제 Offset', options:hexOptions(0,10), default:'3'},
       {seg:15, label:'외부제어 출력 설정', options:[{value:'0',text:'Thermo on'},{value:'1',text:'Operation on'}], default:'1'},
-      {seg:16, label:'먼지센서 감도', options:[{value:'2',text:'x1'},{value:'6',text:'x0.75'},{value:'A',text:'x0.5'}], default:'2'},
+      {seg:16, label:'먼지센서 감도', options:[{value:'2',text:'x1'},{value:'6',text:'x0.75'},{value:'A',text:'x0.5'}], default:'2',
+        note:'변경해도 표시되는 미세먼지 수치나 풍량전환에 변화가 없는 것 확인 (2026/7/8)'},
       {seg:18, label:'프리필터 사용시간', options:[{value:'2',text:'1000 Hr'},{value:'6',text:'2000 Hr'},{value:'7',text:'550 Hr'}], default:'7'},
       {seg:20, label:'Drain pump 지연', options:[{value:'0',text:'사용안함'},{value:'1',text:'3분지연없음'},{value:'2',text:'3분지연있음'}], default:'2'},
     ]
   },
   '05': {
     formatHint: '옵션 No. 형식: 05XXXX-1XXXXX-2XXXXX-3XXXXX (기본값 050000-1A6D32-200000-300000)',
+    vizHint: '먼지농도 및 CO2 농도 관련 SEG는 동작 시각화 탭에서 직접 예상 동작을 확인해보면서 설정할 수 있습니다.',
     fixedMap: {1:'0',2:'5',3:'0',4:'0',5:'0',6:'0',7:'1',13:'2',14:'0',15:'0',17:'0',18:'0',19:'3',20:'0',24:'0'},
     fields: [
       {seg:8, label:'자동풍-터보풍 기준 먼지농도', options:dustOptions([56,66,76,86],[111,131,151,171]), default:'A'},
@@ -759,7 +777,8 @@ const SERIES = {
       {seg:11, label:'CO2 센서 상한 검지 농도', options:hexList([650,700,750,800,850],'ppm'), default:'3'},
       {seg:12, label:'집진필터 사용시간', options:hexList([500,750,1000,1250,1500,1750,2000],' Hour'), default:'2'},
       {seg:16, label:'외부댐퍼 사용', options:[{value:'0',text:'사용안함'},{value:'1',text:'사용'}], default:'0'},
-      {seg:21, label:'외기냉방 설정온도', options:outdoorTempOptions(), default:'0'},
+      {seg:21, label:'외기냉방 설정온도', options:outdoorTempOptions(), default:'0',
+        note:'사용안함: OA-RA간 온도차가 5도 미만일 때 bypass 댐퍼 개방, 온도설정: 외기청정/AI쾌적 모드일 때 OA 온도가 설정 이하일 경우 bypass 댐퍼 개방'},
       {seg:22, label:'CO2 농도 설정 (풍량전환)', options:hexList([900,950,1000,1050,1100,1150,1200],'ppm'), default:'0'},
       {seg:23, label:'CO2 청정도-나쁨 표시 최대값', options:hexList([1500,1800,2000,2300,2500,2800,3000,3300,3500,3800,4000]), default:'0'},
     ]
@@ -912,31 +931,50 @@ async function copyText(text){
   toast._timer = setTimeout(()=>toast.classList.remove('show'), 1400);
 }
 
+const TAB_KEYS = ['02','05','viz','verify'];
+
+function activateTab(key, updateHash){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===key));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+key));
+  const hint = document.getElementById('formatHint');
+  const hintTip = document.getElementById('formatHintTip');
+  const genOutput = document.getElementById('genOutput');
+  if(key==='02' || key==='05'){
+    currentSeries = key;
+    hint.style.display = 'block';
+    hint.textContent = SERIES[key].formatHint;
+    hintTip.style.display = SERIES[key].vizHint ? 'block' : 'none';
+    hintTip.textContent = SERIES[key].vizHint || '';
+    genOutput.style.display = 'block';
+    updateCode(key);
+    showCodeMessage('', '');
+  } else if(key==='viz'){
+    hint.style.display = 'none';
+    hintTip.style.display = 'none';
+    genOutput.style.display = 'none';
+    refreshViz();
+  } else {
+    hint.style.display = 'none';
+    hintTip.style.display = 'none';
+    genOutput.style.display = 'none';
+  }
+  if(updateHash!==false){
+    try{ if(location.hash.replace('#','')!==key) location.hash = key; }catch(e){}
+  }
+}
+
+function getInitialTabKey(){
+  const hash = location.hash.replace('#','').trim();
+  if(TAB_KEYS.includes(hash)) return hash;
+  try{
+    const q = new URLSearchParams(location.search).get('tab');
+    if(q && TAB_KEYS.includes(q)) return q;
+  }catch(e){}
+  return '02';
+}
+
 document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-    btn.classList.add('active');
-    const key = btn.dataset.tab;
-    document.getElementById('panel-'+key).classList.add('active');
-    const hint = document.getElementById('formatHint');
-    const genOutput = document.getElementById('genOutput');
-    if(key==='02' || key==='05'){
-      currentSeries = key;
-      hint.style.display = 'block';
-      hint.textContent = SERIES[key].formatHint;
-      genOutput.style.display = 'block';
-      updateCode(key);
-      showCodeMessage('', '');
-    } else if(key==='viz'){
-      hint.style.display = 'none';
-      genOutput.style.display = 'none';
-      refreshViz();
-    } else {
-      hint.style.display = 'none';
-      genOutput.style.display = 'none';
-    }
-  });
+  btn.addEventListener('click', ()=>activateTab(btn.dataset.tab));
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>resetDefaults(currentSeries));
@@ -975,21 +1013,13 @@ function applyPastedCode(key, rawInput){
     const match = f.options.find(o=>o.value===val);
     if(match){
       document.getElementById(`sel-${key}-${f.seg}`).value = val;
-      if(key==='05' && segSelectSync[f.seg]){
-        segSelectSync[f.seg].forEach(id=>{
-          const el = document.getElementById(id);
-          if(el && el.value !== val) el.value = val;
-        });
-      }
+      if(key==='05') syncSegClones(f.seg, val);
     } else {
       skipped.push(`SEG${f.seg}(${f.label})`);
     }
   });
   updateCode(key);
-  if(key==='05'){
-    const vizBtn = document.querySelector('.tab-btn[data-tab="viz"]');
-    if(vizBtn && vizBtn.classList.contains('active')) refreshViz();
-  }
+  if(key==='05') refreshVizIfActive();
   if(skipped.length){
     showCodeMessage(`정의되지 않은 값이 있어 일부 항목은 유지되었습니다: ${skipped.join(', ')}`, 'warning');
   } else {
@@ -1021,14 +1051,22 @@ function registerSegSync(seg, elId){
   segSelectSync[seg].push(elId);
 }
 
-function setSegValue(seg, value){
+function syncSegClones(seg, value){
   (segSelectSync[seg]||[]).forEach(id=>{
     const el = document.getElementById(id);
     if(el && el.value !== value) el.value = value;
   });
-  updateCode('05');
+}
+
+function refreshVizIfActive(){
   const vizBtn = document.querySelector('.tab-btn[data-tab="viz"]');
   if(vizBtn && vizBtn.classList.contains('active')) refreshViz();
+}
+
+function setSegValue(seg, value){
+  syncSegClones(seg, value);
+  updateCode('05');
+  refreshVizIfActive();
 }
 
 function renderSegPicker(containerId, segs){
@@ -1218,31 +1256,80 @@ function getCleanThresholds(){
 
 const CLEAN_SCENARIOS = {
   standard: {
-    label: '표준 (상승 후 하강)',
     tmax: 34,
     keyframes: [[0,450],[4,450],[9,950],[19,950],[24,450],[34,450]]
   },
   blip: {
-    label: '짧은 초과 (디바운스 확인)',
     tmax: 40,
-    keyframes: [[0,450],[3,450],[5,880],[7,880],[9,450],[14,450],[19,950],[30,950],[34,450],[40,450]]
+    keyframes: [[0,450],[5,550],[8,650],[9,1350],[12,1000],[13,650],[14,590],[19,750],[30,850],[34,650],[40,450]]
   },
   oscillate: {
-    label: '반복 전환 (여러 번 오르내림)',
     tmax: 55,
-    keyframes: [[0,450],[3,450],[8,950],[16,950],[21,450],[29,450],[34,950],[42,950],[47,450],[55,450]]
+    keyframes: [[0,450],[3,450],[8,1050],[12,1050],[19,550],[23,850],[25,860],[29,500],[32,550],[34,830],[42,750],[47,450],[55,450]]
   },
   gradual: {
-    label: '완만한 변화 (근접 유지 후 통과)',
     tmax: 60,
-    keyframes: [[0,600],[3,600],[13,720],[28,720],[38,810],[42,810],[52,580],[60,580]]
+    keyframes: [[0,480],[3,570],[13,650],[28,770],[38,850],[42,810],[52,580],[60,580]]
   }
 };
 
+let customKeyframes = null;
+
+function parseCustomKeyframes(text){
+  let data;
+  try{
+    data = JSON.parse(text);
+  }catch(e){
+    return { error: '문법 오류: 올바른 JSON 배열 형식이 아닙니다. 예) [[0,600],[10,800],[30,600]]' };
+  }
+  if(!Array.isArray(data) || data.length < 2){
+    return { error: '최소 2개 이상의 [시간, 농도] 쌍이 필요합니다.' };
+  }
+  for(const kf of data){
+    if(!Array.isArray(kf) || kf.length!==2 || typeof kf[0]!=='number' || typeof kf[1]!=='number' || !isFinite(kf[0]) || !isFinite(kf[1])){
+      return { error: '각 항목은 [시간(분), CO2농도(ppm)] 형태의 숫자 쌍이어야 합니다.' };
+    }
+    if(kf[0] < 0){
+      return { error: '시간은 0 이상이어야 합니다.' };
+    }
+  }
+  for(let i=1;i<data.length;i++){
+    if(data[i][0] < data[i-1][0]){
+      return { error: '시간은 앞에서 뒤로 갈수록 커지거나 같아야 합니다(오름차순).' };
+    }
+  }
+  return { keyframes: data };
+}
+
+function isCustomizingClean(){
+  const cb = document.getElementById('cleanCustomizeToggle');
+  return !!(cb && cb.checked && customKeyframes);
+}
+function getActiveKeyframes(scenarioId){
+  if(isCustomizingClean()) return customKeyframes;
+  return (CLEAN_SCENARIOS[scenarioId] || CLEAN_SCENARIOS.standard).keyframes;
+}
+function getActiveTmax(scenarioId){
+  if(isCustomizingClean()) return customKeyframes[customKeyframes.length-1][0];
+  return (CLEAN_SCENARIOS[scenarioId] || CLEAN_SCENARIOS.standard).tmax;
+}
+
+function showCleanCustomMsg(text, isError){
+  const msg = document.getElementById('cleanCustomMsg');
+  msg.textContent = text || '';
+  msg.className = 'clean-custom-msg' + (isError ? ' error' : '');
+}
+
+function loadScenarioIntoCustomInput(){
+  const scenarioId = document.getElementById('cleanScenarioSelect').value;
+  document.getElementById('cleanCustomInput').value = JSON.stringify(CLEAN_SCENARIOS[scenarioId].keyframes);
+  customKeyframes = null;
+  showCleanCustomMsg('', false);
+}
+
 function buildCleanTrace(scenarioId){
-  const scenario = CLEAN_SCENARIOS[scenarioId] || CLEAN_SCENARIOS.standard;
-  const keyframes = scenario.keyframes;
-  const tmax = scenario.tmax;
+  const keyframes = getActiveKeyframes(scenarioId);
+  const tmax = getActiveTmax(scenarioId);
   const trace = [];
   for(let t=0; t<=tmax; t=+(t+0.1).toFixed(2)){
     let v = keyframes[0][1];
@@ -1281,7 +1368,7 @@ function renderCleanPanel(){
 
   const W=860,H=284,padL=58,padR=20,padT=16,padB=94;
   const plotW=W-padL-padR, plotH=H-padT-padB;
-  const tmax = CLEAN_SCENARIOS[scenarioId].tmax;
+  const tmax = getActiveTmax(scenarioId);
   const scaleValues = trace.map(p=>p.v).concat([th.upperPpm, th.lowerPpm]);
   const vmin = Math.min(...scaleValues)-50;
   const vmax = Math.max(...scaleValues)+50;
@@ -1300,14 +1387,25 @@ function renderCleanPanel(){
   }
   svg += `<text class="chart-text" x="14" y="${padT+plotH/2}" font-size="10" text-anchor="middle" transform="rotate(-90 14 ${padT+plotH/2})">CO2 (ppm)</text>`;
 
+  const sampleStep = sim.length>1 ? sim[1].t-sim[0].t : 0.1;
   let ci=0;
   while(ci<sim.length){
     const active = sim[ci].timer>0;
     let cj=ci;
     while(cj<sim.length && (sim[cj].timer>0)===active) cj++;
     if(active){
-      const cx1=xPix(sim[ci].t), cx2=xPix(sim[Math.min(cj,sim.length-1)].t);
+      const endIdx = Math.min(cj,sim.length-1);
+      const cx1=xPix(sim[ci].t), cx2=xPix(sim[endIdx].t);
+      // sim[ci].timer는 이미 진입 직전 한 스텝(sampleStep)이 누적된 값이므로 보정
+      const duration = sim[endIdx].t - sim[ci].t + sampleStep;
       svg += `<rect class="chart-countdown-zone" x="${cx1}" y="${padT}" width="${Math.max(0,cx2-cx1)}" height="${plotH}"/>`;
+      if(duration >= 1.5 && (cx2-cx1) > 24){
+        const labelText = `${duration.toFixed(1)}분`;
+        const labelX = (cx1+cx2)/2, labelY = padT+plotH/2;
+        const estW = labelText.length*6.5+8;
+        svg += `<rect x="${labelX-estW/2}" y="${labelY-9}" width="${estW}" height="14" rx="3" style="fill:var(--chart-bg);opacity:0.85"/>`;
+        svg += `<text class="chart-text" x="${labelX}" y="${labelY+2}" font-size="10" text-anchor="middle" font-weight="700">${labelText}</text>`;
+      }
     }
     ci=cj;
   }
@@ -1370,7 +1468,7 @@ let cleanPlayback = { playing:false, elapsedMs:0, rafId:null, lastTs:0 };
 
 function currentCleanDurationMs(){
   const scenarioId = document.getElementById('cleanScenarioSelect').value;
-  return CLEAN_MS_PER_SIMMIN * CLEAN_SCENARIOS[scenarioId].tmax;
+  return CLEAN_MS_PER_SIMMIN * getActiveTmax(scenarioId);
 }
 
 function updateCleanStatus(frac){
@@ -1507,10 +1605,33 @@ document.getElementById('pm10Slider').addEventListener('input', ()=>{
 });
 document.getElementById('playCleanBtn').addEventListener('click', toggleCleanScenario);
 document.getElementById('restartCleanBtn').addEventListener('click', restartCleanScenario);
-document.getElementById('cleanScenarioSelect').addEventListener('change', renderCleanPanel);
+document.getElementById('cleanScenarioSelect').addEventListener('change', ()=>{
+  if(document.getElementById('cleanCustomizeToggle').checked) loadScenarioIntoCustomInput();
+  renderCleanPanel();
+});
 document.getElementById('cleanSpeedSlider').addEventListener('input', ()=>{
   const speed = CLEAN_SPEED_STEPS[Number(document.getElementById('cleanSpeedSlider').value)];
   document.getElementById('cleanSpeedVal').textContent = speed + 'x';
+});
+document.getElementById('cleanCustomizeToggle').addEventListener('change', (e)=>{
+  document.getElementById('cleanCustomWrap').style.display = e.target.checked ? 'block' : 'none';
+  if(e.target.checked){
+    loadScenarioIntoCustomInput();
+  } else {
+    customKeyframes = null;
+    showCleanCustomMsg('', false);
+  }
+  renderCleanPanel();
+});
+document.getElementById('cleanCustomInput').addEventListener('input', ()=>{
+  const result = parseCustomKeyframes(document.getElementById('cleanCustomInput').value);
+  if(result.error){
+    showCleanCustomMsg(result.error, true);
+    return;
+  }
+  customKeyframes = result.keyframes;
+  showCleanCustomMsg('', false);
+  renderCleanPanel();
 });
 
 // ---- 검증(디코딩) 탭 ----
@@ -1621,8 +1742,11 @@ document.getElementById('verifyInput').addEventListener('keydown', (e)=>{
 renderPanel('02');
 renderPanel('05');
 renderVizSegPickers();
-document.getElementById('formatHint').textContent = SERIES['02'].formatHint;
-updateCode('02');
+activateTab(getInitialTabKey(), false);
+window.addEventListener('hashchange', ()=>{
+  const key = location.hash.replace('#','').trim();
+  if(TAB_KEYS.includes(key)) activateTab(key, false);
+});
 </script>
 </body>
 </html>
