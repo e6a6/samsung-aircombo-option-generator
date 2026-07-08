@@ -491,8 +491,8 @@
 
   .chart-line-neutral{ stroke:var(--chart-line); }
   .chart-line-grid{ stroke:var(--chart-grid); }
-  .chart-text{ fill:var(--chart-text); }
-  .chart-text-dim{ fill:var(--chart-text-dim); }
+  .chart-text{ fill:var(--chart-text); font-weight:600; }
+  .chart-text-dim{ fill:var(--chart-text-dim); font-weight:600; }
   .chart-trace{ stroke:var(--chart-trace); }
   .chart-marker-dot{ fill:var(--chart-trace); stroke:var(--chart-bg); }
   .chart-band{ opacity:0.08; }
@@ -566,6 +566,27 @@
   }
   #cleanPlayhead{ cursor:ew-resize; touch-action:none; }
   #cleanStatusLine{ font-weight:600; }
+
+  @keyframes co2MarkerPulse{
+    0%{ transform:scale(1); }
+    40%{ transform:scale(1.35); }
+    100%{ transform:scale(1); }
+  }
+  @keyframes co2GlowPulse{
+    0%{ transform:scale(1); opacity:0.25; }
+    40%{ transform:scale(1.6); opacity:0.45; }
+    100%{ transform:scale(1); opacity:0.25; }
+  }
+  #co2Marker.co2-pulse{
+    transform-box:fill-box;
+    transform-origin:center;
+    animation:co2MarkerPulse .5s ease-out;
+  }
+  #co2MarkerGlow.co2-pulse{
+    transform-box:fill-box;
+    transform-origin:center;
+    animation:co2GlowPulse .5s ease-out;
+  }
 
   @media (pointer: coarse){
     .playhead-hit{ stroke-width:130; }
@@ -658,7 +679,7 @@
         <label>테스트 PM10: <span id="pm10SliderVal">0</span> ㎍/㎥</label>
         <input type="range" id="pm10Slider" min="0" max="200" step="1" value="0" autocomplete="off">
       </div>
-      <div class="viz-hint">초록 영역: 약풍 · 노랑 영역: 강풍 · 빨강 영역: 터보 — PM2.5, PM10 중 하나라도 경계값을 넘으면 1분 뒤 해당 단계로 전환됩니다(OR 조건). 이 조건은 오를 때/내릴 때 기준이 동일합니다.</div>
+      <div class="viz-hint">PM2.5, PM10 중 하나라도 경계값을 넘으면 1분 뒤 해당 단계로 전환됩니다(OR 조건). 이 조건은 오를 때/내릴 때 기준이 동일합니다.</div>
       <div class="viz-result" id="dustResultBadge"></div>
     </div>
 
@@ -1145,7 +1166,7 @@ function getOpt05(seg){
   return f.options.find(o=>o.value===v);
 }
 
-const LEVEL_NAMES = ['약풍(auto low)','강풍(auto high)','터보'];
+const LEVEL_NAMES = ['약풍','강풍','터보풍'];
 const LEVEL_COLORS = ['#2a9d4a','#e2a730','#d32f2f'];
 
 let co2Trend = 'rising';
@@ -1176,28 +1197,40 @@ function resolveCo2Level(x, level, th){
   return level;
 }
 
-function renderCo2Panel(){
-  const th = getCo2Thresholds();
+function getCo2Geometry(){
   const xmin=400, xmax=1300;
-  const W=860,H=220,padL=50,padR=20,padT=16,padB=30;
+  const W=860,H=220,padL=26,padR=20,padT=16,padB=34;
   const plotW=W-padL-padR, plotH=H-padT-padB;
   const xPix = v => padL + (Math.min(Math.max(v,xmin),xmax)-xmin)/(xmax-xmin)*plotW;
   const bandH = plotH/3;
   const centerY = lvl => padT + (2-lvl)*bandH + bandH/2;
+  return { xmin, xmax, W, H, padL, padR, padT, padB, plotW, plotH, xPix, bandH, centerY };
+}
+
+function co2DeadZoneNote(curVal, th){
+  const inDeadZone = (curVal>=th.L1 && curVal<th.L2) || (curVal>=th.L3 && curVal<th.L4);
+  return inDeadZone ? ` <span style="color:var(--warn);">(히스테리시스 구간 — 아직 임계값을 넘지 않아 직전 상태 유지)</span>` : '';
+}
+
+function renderCo2Panel(){
+  const th = getCo2Thresholds();
+  const { xmin, xmax, padL, padT, plotW, plotH, xPix, centerY } = getCo2Geometry();
 
   let svg = '';
+  svg += `<text class="chart-text" x="14" y="${padT+plotH/2}" font-size="12" font-weight="700" text-anchor="middle" transform="rotate(-90 14 ${padT+plotH/2})">풍량</text>`;
+  const bandH = plotH/3;
   for(let lvl=0; lvl<3; lvl++){
     const y = padT + (2-lvl)*bandH;
     svg += `<rect class="chart-band" x="${padL}" y="${y}" width="${plotW}" height="${bandH}" fill="${LEVEL_COLORS[lvl]}"/>`;
-    svg += `<text x="${padL+6}" y="${y+16}" font-size="11" fill="${LEVEL_COLORS[lvl]}" font-weight="600">${LEVEL_NAMES[lvl]}</text>`;
+    svg += `<text x="${padL+6}" y="${y+17}" font-size="13" fill="${LEVEL_COLORS[lvl]}" font-weight="700">${LEVEL_NAMES[lvl]}</text>`;
   }
   svg += `<rect class="chart-hyst-zone" x="${xPix(th.L1)}" y="${padT}" width="${xPix(th.L2)-xPix(th.L1)}" height="${plotH}"/>`;
   svg += `<rect class="chart-hyst-zone" x="${xPix(th.L3)}" y="${padT}" width="${xPix(th.L4)-xPix(th.L3)}" height="${plotH}"/>`;
-  svg += `<text class="chart-text-dim" x="${xPix(xmin)}" y="${padT+plotH+14}" font-size="10" text-anchor="start">${xmin}</text>`;
+  svg += `<text class="chart-text-dim" x="${xPix(xmin)}" y="${padT+plotH+16}" font-size="12" text-anchor="start">${xmin}</text>`;
   [['L1',th.L1],['L2',th.L2],['L3',th.L3],['L4',th.L4]].forEach(([name,v])=>{
     const x = xPix(v);
     svg += `<line class="chart-line-neutral" x1="${x}" y1="${padT}" x2="${x}" y2="${padT+plotH}" stroke-dasharray="3,3" stroke-width="1"/>`;
-    svg += `<text class="chart-text" x="${x}" y="${padT+plotH+14}" font-size="10" text-anchor="middle">${v}</text>`;
+    svg += `<text class="chart-text" x="${x}" y="${padT+plotH+16}" font-size="12" text-anchor="middle">${v}</text>`;
   });
   const rp = [[xmin,0],[th.L2,0],[th.L2,1],[th.L4,1],[th.L4,2],[xmax,2]];
   svg += `<path d="${rp.map((p,i)=>`${i===0?'M':'L'}${xPix(p[0])},${centerY(p[1])}`).join(' ')}" fill="none" stroke="#0b6cf0" stroke-width="3"/>`;
@@ -1207,20 +1240,60 @@ function renderCo2Panel(){
   const curVal = Number(document.getElementById('co2Slider').value);
   const trend = co2Trend;
   const markerColor = trend==='rising' ? '#0b6cf0' : '#d97706';
-  svg += `<line x1="${xPix(curVal)}" y1="${padT}" x2="${xPix(curVal)}" y2="${padT+plotH}" stroke="${markerColor}" stroke-width="2"/>`;
-  svg += `<circle cx="${xPix(curVal)}" cy="${padT}" r="5" fill="${markerColor}"/>`;
+  const prevLevel = co2Level;
+  co2Level = resolveCo2Level(curVal, co2Level, th);
+  const level = co2Level;
+  const mx = xPix(curVal), my = centerY(level);
+  const pulseAttr = level!==prevLevel ? ' class="co2-pulse"' : '';
+  svg += `<line id="co2MarkerGuide" x1="${mx}" y1="${my}" x2="${mx}" y2="${padT+plotH}" stroke="${markerColor}" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.45"/>`;
+  svg += `<circle id="co2MarkerGlow"${pulseAttr} cx="${mx}" cy="${my}" r="11" fill="${markerColor}" opacity="0.25"/>`;
+  svg += `<circle id="co2Marker"${pulseAttr} cx="${mx}" cy="${my}" r="6" fill="${markerColor}" stroke="#fff" stroke-width="2"/>`;
 
   document.getElementById('co2Svg').innerHTML = svg;
   document.getElementById('co2TrendIndicator').textContent = trend==='rising' ? '▲ 상승 중 감지됨' : '▼ 하강 중 감지됨';
   document.getElementById('co2TrendIndicator').style.color = markerColor;
 
+  document.getElementById('co2ResultBadge').innerHTML =
+    `현재 CO2 ${curVal}ppm → <span class="badge lvl-${level}">${LEVEL_NAMES[level]}</span>${co2DeadZoneNote(curVal, th)}`;
+  return level;
+}
+
+// 슬라이더를 드래그하는 동안 SVG 전체를 다시 그리지 않고 마커(원·글로우·안내선)와
+// 텍스트 배지만 갱신하는 가벼운 경로. 위치는 순간이동하고, 단계가 바뀔 때만 살짝 펄스로 강조한다.
+function updateCo2MarkerOnly(){
+  const th = getCo2Thresholds();
+  const { xPix, centerY } = getCo2Geometry();
+  const curVal = Number(document.getElementById('co2Slider').value);
+  const trend = co2Trend;
+  const markerColor = trend==='rising' ? '#0b6cf0' : '#d97706';
+  const prevLevel = co2Level;
   co2Level = resolveCo2Level(curVal, co2Level, th);
   const level = co2Level;
-  const inDeadZone = (curVal>=th.L1 && curVal<th.L2) || (curVal>=th.L3 && curVal<th.L4);
-  const deadZoneNote = inDeadZone ? ` <span style="color:var(--warn);">(히스테리시스 구간 — 아직 임계값을 넘지 않아 직전 상태 유지)</span>` : '';
+  const mx = xPix(curVal), my = centerY(level);
+
+  const guide = document.getElementById('co2MarkerGuide');
+  const glow = document.getElementById('co2MarkerGlow');
+  const marker = document.getElementById('co2Marker');
+  if(guide){ guide.setAttribute('x1', mx); guide.setAttribute('x2', mx); guide.setAttribute('y1', my); guide.setAttribute('stroke', markerColor); }
+  if(glow){ glow.setAttribute('cx', mx); glow.setAttribute('cy', my); glow.setAttribute('fill', markerColor); }
+  if(marker){ marker.setAttribute('cx', mx); marker.setAttribute('cy', my); marker.setAttribute('fill', markerColor); }
+
+  if(level !== prevLevel){
+    [marker, glow].forEach(el=>{
+      if(!el) return;
+      el.classList.remove('co2-pulse');
+      void el.getBoundingClientRect(); // 강제 리플로우: 애니메이션이 확실히 재시작되도록
+      el.classList.add('co2-pulse');
+    });
+  }
+
+  document.getElementById('co2TrendIndicator').textContent = trend==='rising' ? '▲ 상승 중 감지됨' : '▼ 하강 중 감지됨';
+  document.getElementById('co2TrendIndicator').style.color = markerColor;
+
   document.getElementById('co2ResultBadge').innerHTML =
-    `현재 CO2 ${curVal}ppm → <span class="badge lvl-${level}">${LEVEL_NAMES[level]}</span>${deadZoneNote}`;
-  return level;
+    `현재 CO2 ${curVal}ppm → <span class="badge lvl-${level}">${LEVEL_NAMES[level]}</span>${co2DeadZoneNote(curVal, th)}`;
+
+  updateFinalBadge(level, lastDustLevel);
 }
 
 function getDustThresholds(){
@@ -1228,9 +1301,27 @@ function getDustThresholds(){
   return { t9:{pm25:o9.pm25, pm10:o9.pm10}, t8:{pm25:o8.pm25, pm10:o8.pm10} };
 }
 
+function chartAreaLabel(text, color, boxes){
+  const maxFont = 16, minFont = 8, innerPad = 4;
+  let best = null;
+  for(const b of boxes){
+    if(b.w<=0 || b.h<=0) continue;
+    if(!best || b.w*b.h > best.w*best.h) best = b;
+  }
+  if(!best) return '';
+  const availW = best.w - innerPad*2, availH = best.h - innerPad*2;
+  if(availW<=0 || availH<=0) return '';
+  const fontByW = availW / (text.length*0.95);
+  const fontByH = availH / 1.15;
+  const fontSize = Math.round(Math.min(maxFont, fontByW, fontByH)*10)/10;
+  if(fontSize < minFont) return '';
+  const cx = best.x + best.w/2, cy = best.y + best.h/2;
+  return `<text x="${cx}" y="${cy+fontSize*0.35}" font-size="${fontSize}" font-weight="700" fill="${color}" text-anchor="middle" paint-order="stroke fill" stroke-width="3" stroke-linejoin="round" style="stroke:var(--chart-bg)">${text}</text>`;
+}
+
 function renderDustPanel(){
   const th = getDustThresholds();
-  const W=420,H=420,pad=42,botPad=34;
+  const W=420,H=420,pad=46,botPad=40;
   const xmax = Math.max(100, th.t8.pm25+20);
   const ymax = Math.max(200, th.t8.pm10+30);
   const plotW=W-pad-20, plotH=H-pad-botPad;
@@ -1245,14 +1336,27 @@ function renderDustPanel(){
   svg += `<rect class="chart-region" x="${x9}" y="${y9}" width="${w9}" height="${h9}" fill="#2a9d4a"/>`;
   svg += `<rect x="${x8}" y="${y8}" width="${w8}" height="${h8}" fill="none" stroke="#e2a730" stroke-width="2" stroke-dasharray="5,3"/>`;
   svg += `<rect x="${x9}" y="${y9}" width="${w9}" height="${h9}" fill="none" stroke="#2a9d4a" stroke-width="2" stroke-dasharray="5,3"/>`;
+
+  svg += chartAreaLabel(LEVEL_NAMES[0], LEVEL_COLORS[0], [
+    { x:x9, y:y9, w:w9, h:h9 }
+  ]);
+  svg += chartAreaLabel(LEVEL_NAMES[1], LEVEL_COLORS[1], [
+    { x:x9+w9, y:y8, w:(x8+w8)-(x9+w9), h:h8 },
+    { x:pad, y:y8, w:w9, h:y9-y8 }
+  ]);
+  svg += chartAreaLabel(LEVEL_NAMES[2], LEVEL_COLORS[2], [
+    { x:x8+w8, y:pad, w:(pad+plotW)-(x8+w8), h:plotH },
+    { x:pad, y:pad, w:w8, h:y8-pad }
+  ]);
+
   svg += `<line class="chart-line-neutral" x1="${pad}" y1="${H-botPad}" x2="${pad+plotW}" y2="${H-botPad}"/>`;
   svg += `<line class="chart-line-neutral" x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-botPad}"/>`;
-  svg += `<text class="chart-text" x="${pad+plotW/2}" y="${H-8}" font-size="11" text-anchor="middle">PM2.5 (㎍/㎥)</text>`;
-  svg += `<text class="chart-text" x="14" y="${pad+plotH/2}" font-size="11" text-anchor="middle" transform="rotate(-90 14 ${pad+plotH/2})">PM10 (㎍/㎥)</text>`;
-  svg += `<text x="${xPix(th.t9.pm25)}" y="${H-botPad+14}" font-size="10" fill="#2a9d4a" text-anchor="middle">${th.t9.pm25}</text>`;
-  svg += `<text x="${xPix(th.t8.pm25)}" y="${H-botPad+14}" font-size="10" fill="#e2a730" text-anchor="middle">${th.t8.pm25}</text>`;
-  svg += `<text x="${pad-6}" y="${yPix(th.t9.pm10)+3}" font-size="10" fill="#2a9d4a" text-anchor="end">${th.t9.pm10}</text>`;
-  svg += `<text x="${pad-6}" y="${yPix(th.t8.pm10)+3}" font-size="10" fill="#e2a730" text-anchor="end">${th.t8.pm10}</text>`;
+  svg += `<text class="chart-text" x="${pad+plotW/2}" y="${H-6}" font-size="13" font-weight="700" text-anchor="middle">PM2.5 (㎍/㎥)</text>`;
+  svg += `<text class="chart-text" x="15" y="${pad+plotH/2}" font-size="13" font-weight="700" text-anchor="middle" transform="rotate(-90 15 ${pad+plotH/2})">PM10 (㎍/㎥)</text>`;
+  svg += `<text x="${xPix(th.t9.pm25)}" y="${H-botPad+16}" font-size="12" font-weight="700" fill="#2a9d4a" text-anchor="middle">${th.t9.pm25}</text>`;
+  svg += `<text x="${xPix(th.t8.pm25)}" y="${H-botPad+16}" font-size="12" font-weight="700" fill="#e2a730" text-anchor="middle">${th.t8.pm25}</text>`;
+  svg += `<text x="${pad-8}" y="${yPix(th.t9.pm10)+4}" font-size="12" font-weight="700" fill="#2a9d4a" text-anchor="end">${th.t9.pm10}</text>`;
+  svg += `<text x="${pad-8}" y="${yPix(th.t8.pm10)+4}" font-size="12" font-weight="700" fill="#e2a730" text-anchor="end">${th.t8.pm10}</text>`;
 
   const pm25 = Number(document.getElementById('pm25Slider').value);
   const pm10 = Number(document.getElementById('pm10Slider').value);
@@ -1269,9 +1373,9 @@ function renderDustPanel(){
   return level;
 }
 
-function renderSummary(){
-  const co2Level = renderCo2Panel();
-  const dustLevel = renderDustPanel();
+let lastDustLevel = 0;
+
+function updateFinalBadge(co2Level, dustLevel){
   const finalLevel = Math.max(co2Level, dustLevel);
   let reason;
   if(co2Level === dustLevel){
@@ -1283,6 +1387,13 @@ function renderSummary(){
   }
   document.getElementById('finalResultBadge').innerHTML =
     `<span class="badge lvl-${finalLevel} big">${LEVEL_NAMES[finalLevel]}</span><div class="reason">${reason} (세게 도는 쪽 우선)</div>`;
+}
+
+function renderSummary(){
+  const co2Level = renderCo2Panel();
+  const dustLevel = renderDustPanel();
+  lastDustLevel = dustLevel;
+  updateFinalBadge(co2Level, dustLevel);
 }
 
 function getCleanThresholds(){
@@ -1402,7 +1513,7 @@ function renderCleanPanel(){
   const sim = simulateCleanMode(trace, th);
   window._cleanSim = sim;
 
-  const W=860,H=284,padL=58,padR=20,padT=16,padB=94;
+  const W=860,H=284,padL=64,padR=20,padT=16,padB=104;
   const plotW=W-padL-padR, plotH=H-padT-padB;
   const tmax = getActiveTmax(scenarioId);
   const scaleValues = trace.map(p=>p.v).concat([th.upperPpm, th.lowerPpm]);
@@ -1419,9 +1530,9 @@ function renderCleanPanel(){
     const yv = yPix(v);
     svg += `<line class="chart-line-grid" x1="${padL}" y1="${yv}" x2="${padL+plotW}" y2="${yv}" stroke-width="1"/>`;
     svg += `<line class="chart-line-neutral" x1="${padL-4}" y1="${yv}" x2="${padL}" y2="${yv}"/>`;
-    svg += `<text class="chart-text-dim" x="${padL-8}" y="${yv+3}" font-size="9" text-anchor="end">${Math.round(v)}</text>`;
+    svg += `<text class="chart-text-dim" x="${padL-9}" y="${yv+4}" font-size="11" text-anchor="end">${Math.round(v)}</text>`;
   }
-  svg += `<text class="chart-text" x="14" y="${padT+plotH/2}" font-size="10" text-anchor="middle" transform="rotate(-90 14 ${padT+plotH/2})">CO2 (ppm)</text>`;
+  svg += `<text class="chart-text" x="15" y="${padT+plotH/2}" font-size="12" font-weight="700" text-anchor="middle" transform="rotate(-90 15 ${padT+plotH/2})">CO2 (ppm)</text>`;
 
   const sampleStep = sim.length>1 ? sim[1].t-sim[0].t : 0.1;
   let ci=0;
@@ -1438,26 +1549,26 @@ function renderCleanPanel(){
       if(duration >= 1.5 && (cx2-cx1) > 24){
         const labelText = `${duration.toFixed(1)}분`;
         const labelX = (cx1+cx2)/2, labelY = padT+plotH/2;
-        const estW = labelText.length*6.5+8;
-        svg += `<rect x="${labelX-estW/2}" y="${labelY-9}" width="${estW}" height="14" rx="3" style="fill:var(--chart-bg);opacity:0.85"/>`;
-        svg += `<text class="chart-text" x="${labelX}" y="${labelY+2}" font-size="10" text-anchor="middle" font-weight="700">${labelText}</text>`;
+        const estW = labelText.length*7.5+10;
+        svg += `<rect x="${labelX-estW/2}" y="${labelY-10}" width="${estW}" height="17" rx="3" style="fill:var(--chart-bg);opacity:0.85"/>`;
+        svg += `<text class="chart-text" x="${labelX}" y="${labelY+4}" font-size="12" text-anchor="middle" font-weight="700">${labelText}</text>`;
       }
     }
     ci=cj;
   }
 
   svg += `<line x1="${padL}" y1="${yPix(th.upperPpm)}" x2="${padL+plotW}" y2="${yPix(th.upperPpm)}" stroke="#0b6cf0" stroke-dasharray="4,3"/>`;
-  svg += `<text x="${padL+plotW}" y="${yPix(th.upperPpm)-4}" font-size="10" fill="#0b6cf0" text-anchor="end">외기청정 전환 상한 ${th.upperPpm}ppm</text>`;
+  svg += `<text x="${padL+plotW}" y="${yPix(th.upperPpm)-5}" font-size="12" font-weight="700" fill="#0b6cf0" text-anchor="end">외기청정 전환 상한 ${th.upperPpm}ppm</text>`;
   svg += `<line x1="${padL}" y1="${yPix(th.lowerPpm)}" x2="${padL+plotW}" y2="${yPix(th.lowerPpm)}" stroke="#2a9d4a" stroke-dasharray="4,3"/>`;
-  svg += `<text x="${padL+plotW}" y="${yPix(th.lowerPpm)+14}" font-size="10" fill="#2a9d4a" text-anchor="end">순환청정 전환 하한 ${th.lowerPpm}ppm</text>`;
+  svg += `<text x="${padL+plotW}" y="${yPix(th.lowerPpm)+16}" font-size="12" font-weight="700" fill="#2a9d4a" text-anchor="end">순환청정 전환 하한 ${th.lowerPpm}ppm</text>`;
 
   svg += `<path class="chart-trace" d="${trace.map((p,i)=>`${i===0?'M':'L'}${xPix(p.t)},${yPix(p.v)}`).join(' ')}" fill="none" stroke-width="2"/>`;
 
   svg += `<line class="chart-trace" x1="${xPix(0)}" y1="${padT}" x2="${xPix(0)}" y2="${padT+plotH}" stroke-width="1.5" stroke-dasharray="2,2"/>`;
-  svg += `<text class="chart-text" x="${xPix(0)+4}" y="${padT+12}" font-size="10" font-weight="700">⚡ 전원 켜짐</text>`;
-  svg += `<text class="chart-text-dim" x="${xPix(0)+4}" y="${padT+24}" font-size="9">(자동환기 초기값: 외기청정)</text>`;
+  svg += `<text class="chart-text" x="${xPix(0)+4}" y="${padT+13}" font-size="12" font-weight="700">⚡ 전원 켜짐</text>`;
+  svg += `<text class="chart-text-dim" x="${xPix(0)+4}" y="${padT+26}" font-size="11">(자동환기 초기값: 외기청정)</text>`;
 
-  const stripY = padT+plotH+14, stripH=14;
+  const stripY = padT+plotH+18, stripH=14;
   let i=0;
   while(i<sim.length){
     const startMode = sim[i].mode; let j=i;
@@ -1467,16 +1578,16 @@ function renderCleanPanel(){
     svg += `<rect x="${x1}" y="${stripY}" width="${Math.max(0,x2-x1)}" height="${stripH}" fill="${color}" opacity="0.7"/>`;
     i=j;
   }
-  svg += `<text x="${padL}" y="${stripY+stripH+14}" font-size="10" fill="#0b6cf0">■ 외기청정</text>`;
-  svg += `<text x="${padL+70}" y="${stripY+stripH+14}" font-size="10" fill="#2a9d4a">■ 순환청정</text>`;
+  svg += `<text x="${padL}" y="${stripY+stripH+16}" font-size="12" font-weight="600" fill="#0b6cf0">■ 외기청정</text>`;
+  svg += `<text x="${padL+76}" y="${stripY+stripH+16}" font-size="12" font-weight="600" fill="#2a9d4a">■ 순환청정</text>`;
 
   for(let t=0;t<=tmax;t+=5){
-    svg += `<text class="chart-text-dim" x="${xPix(t)}" y="${padT+plotH+10}" font-size="9" text-anchor="middle">${t}분</text>`;
+    svg += `<text class="chart-text-dim" x="${xPix(t)}" y="${padT+plotH+11}" font-size="11" text-anchor="middle">${t}분</text>`;
   }
 
-  const statusY = stripY+stripH+34;
-  svg += `<line class="chart-line-neutral" x1="${padL}" y1="${statusY-16}" x2="${padL+plotW}" y2="${statusY-16}" stroke-width="1" opacity="0.5"/>`;
-  svg += `<text id="cleanStatusLine" class="chart-text" x="${padL}" y="${statusY}" font-size="12"></text>`;
+  const statusY = stripY+stripH+40;
+  svg += `<line class="chart-line-neutral" x1="${padL}" y1="${statusY-18}" x2="${padL+plotW}" y2="${statusY-18}" stroke-width="1" opacity="0.5"/>`;
+  svg += `<text id="cleanStatusLine" class="chart-text" x="${padL}" y="${statusY}" font-size="13"></text>`;
 
   svg += `<g id="cleanPlayhead">
     <line class="playhead-hit" x1="0" y1="${padT}" x2="0" y2="${padT+plotH}" stroke="transparent" stroke-width="16"/>
@@ -1629,7 +1740,7 @@ document.getElementById('co2Slider').addEventListener('input', ()=>{
   else if(newVal < co2PrevVal) co2Trend = 'falling';
   co2PrevVal = newVal;
   document.getElementById('co2SliderVal').textContent = newVal;
-  renderSummary();
+  updateCo2MarkerOnly();
 });
 document.getElementById('pm25Slider').addEventListener('input', ()=>{
   document.getElementById('pm25SliderVal').textContent = document.getElementById('pm25Slider').value;
