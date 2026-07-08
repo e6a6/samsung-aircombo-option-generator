@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>삼성 에어콤보 옵션코드 생성기</title>
 <script>
@@ -565,6 +566,41 @@
   }
   #cleanPlayhead{ cursor:ew-resize; touch-action:none; }
   #cleanStatusLine{ font-weight:600; }
+
+  @media (pointer: coarse){
+    .playhead-hit{ stroke-width:130; }
+    .playhead-dot{ r:12; }
+  }
+
+  @media (max-width: 640px){
+    body{ padding:12px; }
+    .app-header{ margin-bottom:16px; }
+    .eyebrow{ font-size:10px; letter-spacing:1.5px; }
+    h1{ font-size:19px; }
+    .theme-toggle{ width:34px; height:34px; font-size:14px; }
+    .tabs{ gap:0; }
+    .tab-btn{
+      flex-direction:column;
+      gap:2px;
+      padding:8px 2px;
+      font-size:10.5px;
+    }
+    .tab-btn .tab-num{ font-size:10px; padding:1px 5px; }
+    .field-grid{ grid-template-columns:1fr; }
+    .viz-seg-row{ grid-template-columns:1fr; }
+    .viz-card{ padding:12px; }
+    .output{ padding:12px; }
+    .code-row{
+      flex-direction:column;
+      align-items:stretch;
+      gap:6px;
+    }
+    .code-row .row-label{ flex:0 0 auto; }
+    .code-display{ font-size:15px; letter-spacing:1px; padding:10px; }
+    .code-row .btn{ align-self:flex-end; }
+    .decode-row{ flex-direction:column; align-items:flex-start; gap:3px; }
+    .viz-controls input[type=range]{ min-width:100%; }
+  }
 </style>
 </head>
 <body>
@@ -1443,9 +1479,9 @@ function renderCleanPanel(){
   svg += `<text id="cleanStatusLine" class="chart-text" x="${padL}" y="${statusY}" font-size="12"></text>`;
 
   svg += `<g id="cleanPlayhead">
-    <line x1="0" y1="${padT}" x2="0" y2="${padT+plotH}" stroke="transparent" stroke-width="16"/>
+    <line class="playhead-hit" x1="0" y1="${padT}" x2="0" y2="${padT+plotH}" stroke="transparent" stroke-width="16"/>
     <line x1="0" y1="${padT}" x2="0" y2="${padT+plotH}" stroke="#d32f2f" stroke-width="2"/>
-    <circle cx="0" cy="${padT}" r="6" fill="#d32f2f" stroke="#fff" stroke-width="1.5"/>
+    <circle class="playhead-dot" cx="0" cy="${padT}" r="6" fill="#d32f2f" stroke="#fff" stroke-width="1.5"/>
   </g>`;
 
   const svgEl = document.getElementById('cleanSvg');
