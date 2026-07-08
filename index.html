@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>삼성 에어콤보 옵션코드 생성기</title>
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('acombo-theme');
+    if(!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
+<style>
+  :root{
+    --bg:#eef2f1;
+    --card:#ffffff;
+    --border:#d9e2e0;
+    --accent:#0f9b8e;
+    --accent-dark:#0b756c;
+    --accent-soft:#e3f5f2;
+    --accent-contrast:#ffffff;
+    --text:#182422;
+    --muted:#5c6f6c;
+    --changed-border:#e8a0a0;
+    --changed-bg:#fff1f1;
+    --diff-red:#d32f2f;
+    --input-bg:#ffffff;
+    --panel-bg:#dbe4d4;
+    --panel-border:#b9c7b2;
+    --panel-glow:#23331f;
+    --panel-glow-dim:#6b7d64;
+    --panel-screen-bg:rgba(255,255,255,0.55);
+    --panel-screen-bg-focus:rgba(255,255,255,0.85);
+    --panel-btn-text:#f5f8f2;
+    --mono:"Consolas","SF Mono","Cascadia Code","Courier New",monospace;
+    --sans:"Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;
+    --chart-bg:#fbfcfd;
+    --chart-line:#888;
+    --chart-grid:#eee;
+    --chart-text:#666;
+    --chart-text-dim:#999;
+    --chart-trace:#1c2733;
+    --chart-hyst:#8a8a8a;
+    --warn:#8a6100;
+    color-scheme:light;
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d1417;
+    --card:#141d21;
+    --border:#243035;
+    --accent:#5eead4;
+    --accent-dark:#34d1b8;
+    --accent-soft:#132522;
+    --accent-contrast:#04201d;
+    --text:#dbe7e5;
+    --muted:#84a19d;
+    --changed-border:#b5504f;
+    --changed-bg:#2a1616;
+    --diff-red:#ff6b6b;
+    --input-bg:#0f1719;
+    --panel-bg:#0b2027;
+    --panel-border:#1c3a3f;
+    --panel-glow:#7be6c9;
+    --panel-glow-dim:#4d827a;
+    --panel-screen-bg:rgba(0,0,0,0.28);
+    --panel-screen-bg-focus:rgba(0,0,0,0.4);
+    --panel-btn-text:#04201d;
+    --chart-bg:#0f1a1d;
+    --chart-line:#4a5f5c;
+    --chart-grid:#1f2e31;
+    --chart-text:#9db3b0;
+    --chart-text-dim:#6b7f7c;
+    --chart-trace:#dbe7e5;
+    --chart-hyst:#7d938f;
+    --warn:#ffd479;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--sans);
+    background:var(--bg);
+    color:var(--text);
+    padding:24px;
+    transition:background-color .2s ease, color .2s ease;
+  }
+  .container{
+    max-width:980px;
+    margin:0 auto;
+  }
+  .app-header{
+    margin-bottom:22px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:2.5px;
+    text-transform:uppercase;
+    color:var(--accent-dark);
+    margin-bottom:6px;
+  }
+  .title-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  h1{
+    font-size:25px;
+    font-weight:800;
+    letter-spacing:-0.3px;
+    margin:0;
+  }
+  .theme-toggle{
+    flex:0 0 auto;
+    width:38px;
+    height:38px;
+    border:1px solid var(--border);
+    background:var(--card);
+    color:var(--text);
+    border-radius:9px;
+    font-size:16px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .theme-toggle:hover{ border-color:var(--accent); }
+  .subtitle{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:6px;
+  }
+  .tabs{
+    display:flex;
+    gap:2px;
+    margin-bottom:18px;
+    border-bottom:2px solid var(--border);
+  }
+  .tab-btn{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:11px 8px;
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:600;
+    color:var(--muted);
+    position:relative;
+  }
+  .tab-btn .tab-num{
+    font-family:var(--mono);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    padding:2px 6px;
+    border-radius:4px;
+    background:var(--accent-soft);
+    color:var(--accent-dark);
+  }
+  .tab-btn.active{
+    color:var(--text);
+  }
+  .tab-btn.active .tab-num{
+    background:var(--accent);
+    color:var(--accent-contrast);
+  }
+  .tab-btn::after{
+    content:'';
+    position:absolute;
+    left:0; right:0; bottom:-2px;
+    height:2px;
+    background:transparent;
+  }
+  .tab-btn.active::after{
+    background:var(--accent);
+    box-shadow:0 0 8px var(--accent);
+  }
+  .panel{
+    display:none;
+  }
+  .panel.active{
+    display:block;
+  }
+  .format-hint{
+    font-size:12px;
+    color:var(--muted);
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    margin-bottom:16px;
+  }
+  .field-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:12px;
+    margin-bottom:20px;
+  }
+  .field{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    transition:background .15s, border-color .15s;
+  }
+  .field.changed{
+    border-color:var(--changed-border);
+    background:var(--changed-bg);
+  }
+  .field label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .seg-tag{
+    display:inline-block;
+    font-family:var(--mono);
+    font-weight:700;
+    background:var(--accent-soft);
+    color:var(--accent-dark);
+    font-size:11px;
+    letter-spacing:0.3px;
+    padding:1px 6px;
+    border-radius:4px;
+    margin-right:6px;
+  }
+  .field select{
+    width:100%;
+    padding:8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    font-family:var(--mono);
+    background:var(--input-bg);
+    color:var(--text);
+    transition:background .15s, border-color .15s;
+  }
+  .field.changed select{
+    border-color:var(--changed-border);
+    background:var(--changed-bg);
+  }
+  .field .note{
+    margin-top:6px;
+    font-size:11px;
+    color:var(--warn);
+  }
+  .output{
+    background:var(--panel-bg);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    padding:18px;
+    position:sticky;
+    bottom:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+  }
+  .code-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-bottom:10px;
+  }
+  .code-row .row-label{
+    flex:0 0 140px;
+    font-family:var(--mono);
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--panel-glow);
+  }
+  .code-display{
+    flex:1;
+    font-family:var(--mono);
+    font-size:19px;
+    font-weight:700;
+    letter-spacing:2px;
+    padding:11px 14px;
+    border:1px solid var(--panel-border);
+    border-radius:7px;
+    background:var(--panel-screen-bg);
+    color:var(--panel-glow);
+    word-break:break-all;
+  }
+  .code-display .sep{
+    color:var(--panel-glow-dim);
+    margin:0 3px;
+  }
+  .diff-char{
+    color:#b3261e;
+    font-weight:700;
+  }
+  .marker-char{
+    color:#0b6cf0;
+    font-weight:700;
+  }
+  .code-display[contenteditable="true"]{
+    cursor:text;
+    outline:none;
+  }
+  .code-display[contenteditable="true"]:focus{
+    border-color:var(--accent);
+    background:var(--panel-screen-bg-focus);
+    box-shadow:0 0 0 2px var(--accent-soft);
+  }
+  .row-label .hint{
+    display:block;
+    width:fit-content;
+    margin-top:5px;
+    font-weight:700;
+    text-transform:none;
+    letter-spacing:0.2px;
+    font-size:9.5px;
+    color:var(--panel-bg);
+    background:var(--panel-glow);
+    padding:2px 6px;
+    border-radius:3px;
+  }
+  .code-msg{
+    font-size:12px;
+    margin-top:2px;
+    min-height:16px;
+    color:var(--panel-glow-dim);
+  }
+  .code-msg.error{ color:#b3261e; }
+  .code-msg.warning{ color:var(--warn); }
+  :root[data-theme="dark"] .code-row .row-label{ text-shadow:0 0 6px rgba(123,230,201,0.35); }
+  :root[data-theme="dark"] .code-display{ text-shadow:0 0 8px rgba(123,230,201,0.45); }
+  :root[data-theme="dark"] .diff-char{ color:#ff8a80; text-shadow:0 0 8px rgba(255,90,80,0.65); }
+  :root[data-theme="dark"] .marker-char{ color:#ffffff; text-shadow:0 0 6px rgba(255,255,255,0.45); }
+  :root[data-theme="dark"] .code-msg.error{ color:#ff8a80; }
+  .btn{
+    padding:10px 18px;
+    border:none;
+    border-radius:6px;
+    background:var(--accent);
+    color:var(--accent-contrast);
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn:hover{ background:var(--accent-dark); }
+  .btn.secondary{
+    background:transparent;
+    color:var(--muted);
+    border:1px solid var(--border);
+  }
+  .output .btn{
+    background:var(--panel-glow-dim);
+    color:var(--panel-btn-text);
+  }
+  .output .btn:hover{ background:var(--panel-glow); }
+  .output .btn.secondary{
+    background:transparent;
+    border-color:var(--panel-border);
+    color:var(--panel-glow-dim);
+  }
+  .actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:6px;
+  }
+  .toast{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    background:#2a9d4a;
+    color:#fff;
+    padding:10px 16px;
+    border-radius:6px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s;
+    font-size:13px;
+    z-index:100;
+  }
+  .toast.show{ opacity:1; }
+
+  textarea#verifyInput{
+    width:100%;
+    padding:10px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-family:var(--mono);
+    font-size:14px;
+    background:var(--input-bg);
+    color:var(--text);
+    resize:vertical;
+  }
+  .banner{
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:13px;
+    margin-bottom:12px;
+  }
+  .banner.error{ background:#fdecea; color:#b3261e; border:1px solid #f5c2c0; }
+  .banner.warning{ background:#fff8e1; color:var(--warn); border:1px solid #ffe08a; }
+  .banner.info{ background:#eef3fb; color:#0956c0; border:1px solid #cfe0f7; }
+  .banner ul{ margin:4px 0 0 18px; padding:0; }
+  :root[data-theme="dark"] .banner.error{ background:#3a1f1d; color:#ff8a80; border-color:#5c2b28; }
+  :root[data-theme="dark"] .banner.warning{ background:#3a2f14; border-color:#5c4a1f; }
+  :root[data-theme="dark"] .banner.info{ background:#122a33; color:#7dd3fc; border-color:#1f4652; }
+
+  .decode-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    background:var(--card);
+  }
+  .decode-row:first-child{ border-radius:10px 10px 0 0; }
+  .decode-row:last-child{ border-bottom:none; border-radius:0 0 10px 10px; }
+  .decode-row.changed{ background:var(--changed-bg); }
+  .decode-row.unknown{ background:#fff8e1; }
+  .decode-row .desc{ font-size:13px; color:var(--text); }
+  .decode-row .val{ font-size:13px; font-weight:600; white-space:nowrap; font-family:var(--mono); }
+  .decode-row.changed .val{ color:var(--diff-red); font-weight:700; }
+  .decode-row.unknown .val{ color:var(--warn); }
+  :root[data-theme="dark"] .decode-row.unknown{ background:#3a2f14; }
+  .decode-list{
+    border:1px solid var(--border);
+    border-radius:10px;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+
+  .viz-intro{ margin-bottom:16px; }
+  .viz-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .viz-card h3{
+    margin:0 0 10px;
+    font-size:14px;
+  }
+  .viz-svg{
+    width:100%;
+    height:auto;
+    background:var(--chart-bg);
+    border:1px solid var(--border);
+    border-radius:8px;
+    display:block;
+  }
+  .viz-svg text{ font-family:var(--mono); }
+  .dust-svg{ max-width:420px; margin:0 auto; }
+
+  .chart-line-neutral{ stroke:var(--chart-line); }
+  .chart-line-grid{ stroke:var(--chart-grid); }
+  .chart-text{ fill:var(--chart-text); }
+  .chart-text-dim{ fill:var(--chart-text-dim); }
+  .chart-trace{ stroke:var(--chart-trace); }
+  .chart-marker-dot{ fill:var(--chart-trace); stroke:var(--chart-bg); }
+  .chart-band{ opacity:0.08; }
+  .chart-region{ opacity:0.35; }
+  .chart-hyst-zone{ fill:var(--chart-hyst); opacity:0.18; }
+  .chart-countdown-zone{ fill:#ffe57f; opacity:0.35; }
+  :root[data-theme="dark"] .chart-band{ opacity:0.2; }
+  :root[data-theme="dark"] .chart-region{ opacity:0.45; }
+  :root[data-theme="dark"] .chart-hyst-zone{ opacity:0.28; }
+  :root[data-theme="dark"] .chart-countdown-zone{ opacity:0.3; }
+  .viz-controls{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:12px;
+    margin-top:10px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .viz-controls input[type=range]{
+    flex:1;
+    min-width:140px;
+  }
+  .viz-result{
+    margin-top:10px;
+    font-size:13px;
+  }
+  .viz-result.final{
+    text-align:center;
+    padding:6px;
+  }
+  .badge{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:20px;
+    font-weight:700;
+    font-size:13px;
+    color:#fff;
+  }
+  .badge.lvl-0{ background:#2a9d4a; }
+  .badge.lvl-1{ background:#e2a730; }
+  .badge.lvl-2{ background:#d32f2f; }
+  .badge.big{ font-size:18px; padding:6px 18px; }
+  .reason{
+    margin-top:6px;
+    font-size:12px;
+    color:var(--muted);
+  }
+  .viz-hint{ font-size:12px; color:var(--muted); }
+  .viz-controls select{
+    padding:7px 8px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    font-family:var(--mono);
+    background:var(--input-bg);
+    color:var(--text);
+  }
+  .viz-seg-row{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .viz-seg-item{
+    border:1px solid transparent;
+    border-radius:8px;
+    padding:6px;
+    transition:background .15s, border-color .15s;
+  }
+  .viz-seg-item.changed{
+    border-color:var(--changed-border);
+    background:var(--changed-bg);
+  }
+  .viz-seg-item label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--muted);
+    margin-bottom:4px;
+  }
+  .viz-seg-item select{
+    width:100%;
+    padding:7px;
+    border:1px solid var(--border);
+    border-radius:6px;
+    font-size:13px;
+    font-family:var(--mono);
+    background:var(--input-bg);
+    color:var(--text);
+  }
+  .viz-seg-item.changed select{
+    border-color:var(--changed-border);
+    background:var(--changed-bg);
+  }
+  .co2-trend-indicator{
+    font-weight:700;
+  }
+  #cleanPlayhead{ cursor:ew-resize; touch-action:none; }
+  #cleanStatusLine{ font-weight:600; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="app-header">
+    <div class="eyebrow">Service Mode · Option Code Utility</div>
+    <div class="title-row">
+      <h1>에어콤보 옵션코드 생성기</h1>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="테마 전환">🌙</button>
+    </div>
+    <div class="subtitle">삼성 비스포크 AI 에어콤보 서비스모드 옵션코드 — 02 계열 / 05 계열 설치 옵션</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="02"><span class="tab-num">02</span>설치 옵션</button>
+    <button class="tab-btn" data-tab="05"><span class="tab-num">05</span>설치 옵션</button>
+    <button class="tab-btn" data-tab="viz"><span class="tab-num">VZ</span>동작 시각화</button>
+    <button class="tab-btn" data-tab="verify"><span class="tab-num">CK</span>코드 검증</button>
+  </div>
+
+  <div class="format-hint" id="formatHint"></div>
+
+  <section id="panel-02" class="panel active">
+    <div class="field-grid" id="fields-02"></div>
+  </section>
+
+  <section id="panel-05" class="panel">
+    <div class="field-grid" id="fields-05"></div>
+  </section>
+
+  <section id="panel-viz" class="panel">
+    <div class="viz-intro banner info">이 화면은 <b>05계열 설치 옵션</b>의 SEG8·SEG9·SEG10·SEG11·SEG22 값에 따라 자동환기/자동풍에서 팬 속도와 청정 모드가 어떻게 바뀌는지 시각화합니다. 아래 각 패널의 SEG 콤보박스는 05계열 탭의 콤보박스와 실시간으로 서로 동기화되므로, 어느 쪽에서 값을 바꾸든 그래프가 즉시 갱신됩니다.</div>
+
+    <div class="viz-card">
+      <h3>① CO2 농도 → 팬 속도 (SEG22)</h3>
+      <div class="viz-seg-row" id="co2SegPicker"></div>
+      <svg id="co2Svg" viewBox="0 0 860 220" class="viz-svg"></svg>
+      <div class="viz-controls">
+        <label>테스트 CO2 농도: <span id="co2SliderVal">450</span> ppm</label>
+        <input type="range" id="co2Slider" min="400" max="1300" step="10" value="450" autocomplete="off">
+        <span id="co2TrendIndicator" class="co2-trend-indicator">▲ 상승 중 감지됨</span>
+      </div>
+      <div class="viz-hint">파란 실선: 농도가 오를 때 전환 경로 · 주황 점선: 농도가 내려갈 때 전환 경로 · 회색 음영: 직전 이력에 따라 팬속도가 달라지는 히스테리시스 구간</div>
+      <div class="viz-result" id="co2ResultBadge"></div>
+    </div>
+
+    <div class="viz-card">
+      <h3>② 미세먼지 농도 → 팬 속도 (SEG8 · SEG9)</h3>
+      <div class="viz-seg-row" id="dustSegPicker"></div>
+      <svg id="dustSvg" viewBox="0 0 420 420" class="viz-svg dust-svg"></svg>
+      <div class="viz-controls">
+        <label>테스트 PM2.5: <span id="pm25SliderVal">0</span> ㎍/㎥</label>
+        <input type="range" id="pm25Slider" min="0" max="100" step="1" value="0" autocomplete="off">
+        <label>테스트 PM10: <span id="pm10SliderVal">0</span> ㎍/㎥</label>
+        <input type="range" id="pm10Slider" min="0" max="200" step="1" value="0" autocomplete="off">
+      </div>
+      <div class="viz-hint">초록 영역: 약풍 · 노랑 영역: 강풍 · 빨강 영역: 터보 — PM2.5, PM10 중 하나라도 경계값을 넘으면 해당 단계로 전환됩니다(OR 조건). 이 조건은 오를 때/내릴 때 기준이 동일합니다.</div>
+      <div class="viz-result" id="dustResultBadge"></div>
+    </div>
+
+    <div class="viz-card">
+      <h3>③ 최종 팬 속도 (경합 결과)</h3>
+      <div class="viz-hint">CO2 조건과 미세먼지 조건이 서로 다른 단계를 요구할 경우, 더 세게 도는 쪽이 우선 적용됩니다.</div>
+      <div class="viz-result final" id="finalResultBadge"></div>
+    </div>
+
+    <div class="viz-card">
+      <h3>④ 외기청정 / 순환청정 전환 (SEG10 · SEG11)</h3>
+      <div class="viz-seg-row" id="cleanSegPicker"></div>
+      <div class="viz-controls">
+        <label>시나리오: </label>
+        <select id="cleanScenarioSelect">
+          <option value="standard">표준 (상승 후 하강)</option>
+          <option value="blip">짧은 초과 (디바운스 확인)</option>
+          <option value="oscillate">반복 전환 (여러 번 오르내림)</option>
+          <option value="gradual">완만한 변화 (근접 유지 후 통과)</option>
+        </select>
+      </div>
+      <svg id="cleanSvg" viewBox="0 0 860 284" class="viz-svg"></svg>
+      <div class="viz-controls">
+        <button class="btn secondary" id="playCleanBtn">▶ 재생</button>
+        <button class="btn secondary" id="restartCleanBtn">↺ 처음부터</button>
+        <label>재생 속도: <span id="cleanSpeedVal">1x</span></label>
+        <input type="range" id="cleanSpeedSlider" min="0" max="7" step="1" value="3" autocomplete="off">
+      </div>
+      <div class="viz-hint">빨간 재생 마커는 직접 드래그해서 원하는 시점으로 이동할 수 있습니다. 그래프 하단의 안내선 아래에 현재 재생 상태가 표시됩니다. 예시로 CO2 농도가 오르내리는 가상 시나리오를 재생합니다. 임계값을 넘어도 SEG10에 설정된 시간만큼 그 상태가 유지되어야 실제로 모드가 전환됩니다(디바운싱). 옅은 노란색 배경: 조건은 충족됐지만 아직 전환 대기(카운트다운) 중인 구간입니다.</div>
+    </div>
+  </section>
+
+  <section id="panel-verify" class="panel">
+    <div class="field" style="margin-bottom:16px;">
+      <label>옵션코드(유선리모컨에 표시되는 형식) 또는 Raw 코드를 입력하세요</label>
+      <textarea id="verifyInput" rows="2" placeholder="예) 020010-1A9A30-201207-320000   또는   20 01 0A 9A 30 01 20 72 00 00"></textarea>
+      <div style="margin-top:10px;">
+        <button class="btn" id="verifyBtn">해석하기</button>
+      </div>
+    </div>
+    <div id="verifyResult"></div>
+  </section>
+
+  <div class="output" id="genOutput">
+    <div class="code-row">
+      <span class="row-label">옵션코드<span class="hint">직접 입력 가능</span></span>
+      <div class="code-display" id="codeFormatted" contenteditable="true" spellcheck="false"></div>
+      <button class="btn" id="copyFormattedBtn">복사</button>
+    </div>
+    <div class="code-row">
+      <span class="row-label">옵션코드 Raw<span class="hint">직접 입력 가능</span></span>
+      <div class="code-display" id="codeRaw" contenteditable="true" spellcheck="false"></div>
+      <button class="btn" id="copyRawBtn">복사</button>
+    </div>
+    <div class="code-msg" id="codeMsg"></div>
+    <div class="actions">
+      <button class="btn secondary" id="resetBtn">기본값으로 초기화</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">복사되었습니다</div>
+
+<script>
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeToggle').textContent = theme==='dark' ? '☀️' : '🌙';
+  try{ localStorage.setItem('acombo-theme', theme); }catch(e){}
+}
+applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+document.getElementById('themeToggle').addEventListener('click', ()=>{
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current==='dark' ? 'light' : 'dark');
+});
+
+const HEX = '0123456789ABCDEF';
+
+function hexOptions(startValue, step, unit=''){
+  const opts=[];
+  for(let i=0;i<16;i++){
+    opts.push({value:HEX[i], text:String(startValue+step*i)+unit, num:startValue+step*i});
+  }
+  return opts;
+}
+function hexList(arr, unit=''){
+  return arr.map((v,i)=>({value:HEX[i], text:String(v)+unit, num:v}));
+}
+function dustOptions(pm25base, pm10cycle){
+  const opts=[];
+  for(let i=0;i<16;i++){
+    const pm25 = pm25base[Math.floor(i/4)];
+    const pm10 = pm10cycle[i%4];
+    opts.push({value:HEX[i], text:`PM2.5 ${pm25}ppm / PM10 ${pm10}ppm`, pm25, pm10});
+  }
+  return opts;
+}
+function co2TimeOptions(){
+  const minutes=[4,5,6], ppmBase=[400,450,500,550,600];
+  const opts=[];
+  for(let i=0;i<15;i++){
+    const group=Math.floor(i/3), min=minutes[i%3], ppm=ppmBase[group];
+    opts.push({value:HEX[i], text:`${min}분 / ${ppm}ppm`, min, ppm});
+  }
+  return opts;
+}
+function outdoorTempOptions(){
+  const opts=[{value:'0', text:'사용안함'}];
+  for(let i=1;i<=9;i++){
+    opts.push({value:HEX[i], text:(17+i)+'℃'});
+  }
+  return opts;
+}
+
+const SERIES = {
+  '02': {
+    formatHint: '옵션 No. 형식: 02XXXX-1XXXXX-2XXXXX-3XXXXX (기본값 020010-1A9A30-201207-320000)',
+    fixedMap: {1:'0',2:'2',3:'0',6:'0',7:'1',12:'0',13:'2',14:'0',17:'0',19:'3',21:'0',22:'0',23:'0',24:'0'},
+    fields: [
+      {seg:4, label:'운전모드', options:[{value:'0',text:'정온제습'},{value:'1',text:'냉방제습'}], default:'0'},
+      {seg:5, label:'중앙제어', options:[{value:'0',text:'사용안함'},{value:'1',text:'사용'}], default:'1'},
+      {seg:8, label:'필터교체 알람 (전열환기)', options:hexOptions(10,10), default:'A'},
+      {seg:9, label:'필터교체 알람 (보통환기)', options:hexOptions(30,10), default:'9'},
+      {seg:10, label:'필터교체 알람 (전열환기)', options:hexOptions(80,10), default:'A',
+        note:'설명서 원문에 SEG8과 동일한 명칭으로 표기되어 있습니다.'},
+      {seg:11, label:'필터알람 해제 Offset', options:hexOptions(0,10), default:'3'},
+      {seg:15, label:'외부제어 출력 설정', options:[{value:'0',text:'Thermo on'},{value:'1',text:'Operation on'}], default:'1'},
+      {seg:16, label:'먼지센서 감도', options:[{value:'2',text:'x1'},{value:'6',text:'x0.75'},{value:'A',text:'x0.5'}], default:'2'},
+      {seg:18, label:'프리필터 사용시간', options:[{value:'2',text:'1000 Hr'},{value:'6',text:'2000 Hr'},{value:'7',text:'550 Hr'}], default:'7'},
+      {seg:20, label:'Drain pump 지연', options:[{value:'0',text:'사용안함'},{value:'1',text:'3분지연없음'},{value:'2',text:'3분지연있음'}], default:'2'},
+    ]
+  },
+  '05': {
+    formatHint: '옵션 No. 형식: 05XXXX-1XXXXX-2XXXXX-3XXXXX (기본값 050000-1A6D32-200000-300000)',
+    fixedMap: {1:'0',2:'5',3:'0',4:'0',5:'0',6:'0',7:'1',13:'2',14:'0',15:'0',17:'0',18:'0',19:'3',20:'0',24:'0'},
+    fields: [
+      {seg:8, label:'자동풍-터보풍 기준 먼지농도', options:dustOptions([56,66,76,86],[111,131,151,171]), default:'A'},
+      {seg:9, label:'자동풍-강풍 기준 먼지농도', options:dustOptions([31,36,41,46],[61,71,81,91]), default:'6'},
+      {seg:10, label:'CO2 센서 상한 검지시간 / 하한 검지 농도', options:co2TimeOptions(), default:'D'},
+      {seg:11, label:'CO2 센서 상한 검지 농도', options:hexList([650,700,750,800,850],'ppm'), default:'3'},
+      {seg:12, label:'집진필터 사용시간', options:hexList([500,750,1000,1250,1500,1750,2000],' Hour'), default:'2'},
+      {seg:16, label:'외부댐퍼 사용', options:[{value:'0',text:'사용안함'},{value:'1',text:'사용'}], default:'0'},
+      {seg:21, label:'외기냉방 설정온도', options:outdoorTempOptions(), default:'0'},
+      {seg:22, label:'CO2 농도 설정 (풍량전환)', options:hexList([900,950,1000,1050,1100,1150,1200],'ppm'), default:'0'},
+      {seg:23, label:'CO2 청정도-나쁨 표시 최대값', options:hexList([1500,1800,2000,2300,2500,2800,3000,3300,3500,3800,4000]), default:'0'},
+    ]
+  }
+};
+
+const MARKER_IDX = [0,6,12,18]; // 0-based positions of SEG1, SEG7, SEG13, SEG19
+
+function computeDefaultChars(key){
+  const cfg = SERIES[key];
+  const chars = new Array(24).fill('0');
+  Object.entries(cfg.fixedMap).forEach(([seg,val])=>{ chars[seg-1] = val; });
+  cfg.fields.forEach(f=>{ chars[f.seg-1] = f.default; });
+  return chars;
+}
+SERIES['02'].defaultChars = computeDefaultChars('02');
+SERIES['05'].defaultChars = computeDefaultChars('05');
+
+function formattedHTML(chars, diff){
+  const markerSet = new Set(MARKER_IDX);
+  let html='';
+  for(let i=0;i<24;i++){
+    if(i>0 && i%6===0) html += '<span class="sep">-</span>';
+    const cls = diff[i] ? 'diff-char' : (markerSet.has(i) ? 'marker-char' : '');
+    html += cls ? `<span class="${cls}">${chars[i]}</span>` : `<span>${chars[i]}</span>`;
+  }
+  return html;
+}
+function formattedText(chars){
+  return [chars.slice(0,6).join(''),chars.slice(6,12).join(''),chars.slice(12,18).join(''),chars.slice(18,24).join('')].join('-');
+}
+function rawHTML(chars, diff){
+  const markerSet = new Set(MARKER_IDX);
+  let html=''; let count=0;
+  for(let i=0;i<24;i++){
+    if(markerSet.has(i)) continue;
+    html += diff[i] ? `<span class="diff-char">${chars[i]}</span>` : `<span>${chars[i]}</span>`;
+    count++;
+    if(count%2===0 && count<20) html += ' ';
+  }
+  return html;
+}
+function rawText(chars){
+  const markerSet = new Set(MARKER_IDX);
+  const rem = chars.filter((_,i)=>!markerSet.has(i));
+  let out='';
+  for(let i=0;i<rem.length;i+=2){
+    out += rem[i]+rem[i+1];
+    if(i+2<rem.length) out += ' ';
+  }
+  return out;
+}
+function diffOf(key, chars){
+  const def = SERIES[key].defaultChars;
+  return chars.map((c,i)=>c!==def[i]);
+}
+
+let currentSeries = '02';
+
+function renderPanel(key){
+  const cfg = SERIES[key];
+  const container = document.getElementById('fields-'+key);
+  container.innerHTML = '';
+  cfg.fields.forEach(f=>{
+    const div = document.createElement('div');
+    div.className = 'field';
+    const label = document.createElement('label');
+    label.innerHTML = `<span class="seg-tag">SEG${f.seg}</span>${f.label}`;
+    const select = document.createElement('select');
+    select.id = `sel-${key}-${f.seg}`;
+    select.dataset.seg = f.seg;
+    f.options.forEach(o=>{
+      const opt = document.createElement('option');
+      opt.value = o.value;
+      const isDefault = o.value === f.default;
+      opt.textContent = `${o.value} : ${o.text}` + (isDefault ? ' (기본값)' : '');
+      if(isDefault) opt.selected = true;
+      select.appendChild(opt);
+    });
+    if(key==='05'){
+      registerSegSync(f.seg, select.id);
+      select.addEventListener('change', ()=>setSegValue(f.seg, select.value));
+    } else {
+      select.addEventListener('change', ()=>updateCode(key));
+    }
+    div.appendChild(label);
+    div.appendChild(select);
+    if(f.note){
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.textContent = f.note;
+      div.appendChild(note);
+    }
+    container.appendChild(div);
+  });
+}
+
+function getCurrentChars(key){
+  const cfg = SERIES[key];
+  const chars = new Array(24).fill('0');
+  Object.entries(cfg.fixedMap).forEach(([seg,val])=>{ chars[seg-1] = val; });
+  cfg.fields.forEach(f=>{
+    chars[f.seg-1] = document.getElementById(`sel-${key}-${f.seg}`).value;
+  });
+  return chars;
+}
+
+const state = { formattedText:'', rawText:'' };
+
+function updateCode(key){
+  const chars = getCurrentChars(key);
+  const diff = diffOf(key, chars);
+  document.getElementById('codeFormatted').innerHTML = formattedHTML(chars, diff);
+  document.getElementById('codeRaw').innerHTML = rawHTML(chars, diff);
+  state.formattedText = formattedText(chars);
+  state.rawText = rawText(chars);
+  SERIES[key].fields.forEach(f=>{
+    const changed = document.getElementById(`sel-${key}-${f.seg}`).value !== f.default;
+    const ids = (key==='05' && segSelectSync[f.seg]) ? segSelectSync[f.seg] : [`sel-${key}-${f.seg}`];
+    ids.forEach(id=>{
+      const el = document.getElementById(id);
+      if(!el) return;
+      const wrap = el.closest('.field') || el.closest('.viz-seg-item');
+      if(wrap) wrap.classList.toggle('changed', changed);
+    });
+  });
+}
+
+function resetDefaults(key){
+  SERIES[key].fields.forEach(f=>{
+    document.getElementById(`sel-${key}-${f.seg}`).value = f.default;
+  });
+  updateCode(key);
+}
+
+async function copyText(text){
+  try{
+    await navigator.clipboard.writeText(text);
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  const toast = document.getElementById('toast');
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(()=>toast.classList.remove('show'), 1400);
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    const key = btn.dataset.tab;
+    document.getElementById('panel-'+key).classList.add('active');
+    const hint = document.getElementById('formatHint');
+    const genOutput = document.getElementById('genOutput');
+    if(key==='02' || key==='05'){
+      currentSeries = key;
+      hint.style.display = 'block';
+      hint.textContent = SERIES[key].formatHint;
+      genOutput.style.display = 'block';
+      updateCode(key);
+      showCodeMessage('', '');
+    } else if(key==='viz'){
+      hint.style.display = 'none';
+      genOutput.style.display = 'none';
+      refreshViz();
+    } else {
+      hint.style.display = 'none';
+      genOutput.style.display = 'none';
+    }
+  });
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>resetDefaults(currentSeries));
+document.getElementById('copyFormattedBtn').addEventListener('click', ()=>copyText(state.formattedText));
+document.getElementById('copyRawBtn').addEventListener('click', ()=>copyText(state.rawText));
+
+// ---- 코드 직접 입력 -> 콤보박스 역반영 ----
+
+function showCodeMessage(text, type){
+  const msg = document.getElementById('codeMsg');
+  msg.textContent = text || '';
+  msg.className = 'code-msg' + (type ? (' '+type) : '');
+}
+
+function applyPastedCode(key, rawInput){
+  const result = decodeInput(rawInput);
+  if(result.error){
+    updateCode(key);
+    showCodeMessage(result.error, 'error');
+    return;
+  }
+  if(!result.seriesKey){
+    updateCode(key);
+    showCodeMessage(`지원하지 않는 계열입니다 (SEG2 = '${result.seriesDigit}'). 02 또는 05 계열 코드만 입력할 수 있습니다.`, 'error');
+    return;
+  }
+  if(result.seriesKey !== key){
+    updateCode(key);
+    showCodeMessage(`이 코드는 ${result.seriesKey} 계열입니다. ${result.seriesKey} 탭에서 입력해주세요.`, 'error');
+    return;
+  }
+  const chars = result.full.split('');
+  const skipped = [];
+  SERIES[key].fields.forEach(f=>{
+    const val = chars[f.seg-1];
+    const match = f.options.find(o=>o.value===val);
+    if(match){
+      document.getElementById(`sel-${key}-${f.seg}`).value = val;
+      if(key==='05' && segSelectSync[f.seg]){
+        segSelectSync[f.seg].forEach(id=>{
+          const el = document.getElementById(id);
+          if(el && el.value !== val) el.value = val;
+        });
+      }
+    } else {
+      skipped.push(`SEG${f.seg}(${f.label})`);
+    }
+  });
+  updateCode(key);
+  if(key==='05'){
+    const vizBtn = document.querySelector('.tab-btn[data-tab="viz"]');
+    if(vizBtn && vizBtn.classList.contains('active')) refreshViz();
+  }
+  if(skipped.length){
+    showCodeMessage(`정의되지 않은 값이 있어 일부 항목은 유지되었습니다: ${skipped.join(', ')}`, 'warning');
+  } else {
+    showCodeMessage('', '');
+  }
+}
+
+function setupEditableCodeBox(elId){
+  const el = document.getElementById(elId);
+  el.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){
+      e.preventDefault();
+      el.blur();
+    }
+  });
+  el.addEventListener('blur', ()=>{
+    applyPastedCode(currentSeries, el.textContent);
+  });
+}
+setupEditableCodeBox('codeFormatted');
+setupEditableCodeBox('codeRaw');
+
+// ---- 동작 시각화 (05계열: CO2/미세먼지 → 팬속도, 외기청정/순환청정) ----
+
+const segSelectSync = {}; // seg -> [elementId, ...] 모든 연동된 콤보박스 id 목록
+
+function registerSegSync(seg, elId){
+  if(!segSelectSync[seg]) segSelectSync[seg] = [];
+  segSelectSync[seg].push(elId);
+}
+
+function setSegValue(seg, value){
+  (segSelectSync[seg]||[]).forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && el.value !== value) el.value = value;
+  });
+  updateCode('05');
+  const vizBtn = document.querySelector('.tab-btn[data-tab="viz"]');
+  if(vizBtn && vizBtn.classList.contains('active')) refreshViz();
+}
+
+function renderSegPicker(containerId, segs){
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  segs.forEach(seg=>{
+    const f = getField05(seg);
+    const wrap = document.createElement('div');
+    wrap.className = 'viz-seg-item';
+    const label = document.createElement('label');
+    label.innerHTML = `<span class="seg-tag">SEG${seg}</span>${f.label}`;
+    const select = document.createElement('select');
+    select.id = `viz-sel-05-${seg}`;
+    f.options.forEach(o=>{
+      const opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = `${o.value} : ${o.text}` + (o.value===f.default ? ' (기본값)' : '');
+      select.appendChild(opt);
+    });
+    select.value = document.getElementById(`sel-05-${seg}`).value;
+    registerSegSync(seg, select.id);
+    select.addEventListener('change', ()=>setSegValue(seg, select.value));
+    wrap.appendChild(label);
+    wrap.appendChild(select);
+    container.appendChild(wrap);
+    wrap.classList.toggle('changed', select.value !== f.default);
+  });
+}
+
+function renderVizSegPickers(){
+  renderSegPicker('co2SegPicker', [22]);
+  renderSegPicker('dustSegPicker', [9,8]);
+  renderSegPicker('cleanSegPicker', [11,10]);
+}
+
+function getField05(seg){ return SERIES['05'].fields.find(f=>f.seg===seg); }
+function getOpt05(seg){
+  const f = getField05(seg);
+  const v = document.getElementById(`sel-05-${seg}`).value;
+  return f.options.find(o=>o.value===v);
+}
+
+const LEVEL_NAMES = ['약풍(auto low)','강풍(auto high)','터보'];
+const LEVEL_COLORS = ['#2a9d4a','#e2a730','#d32f2f'];
+
+let co2Trend = 'rising';
+let co2PrevVal = 450;
+let co2Level = 0;
+
+function getCo2Thresholds(){
+  const seg22 = getOpt05(22).num;
+  return { L1:seg22-350, L2:seg22-250, L3:seg22-150, L4:seg22, seg22 };
+}
+
+// 실제 기기처럼 임계값을 실제로 넘어야만 상태가 바뀌는 히스테리시스 상태기계.
+// 히스테리시스 구간 안에서는 슬라이더를 어느 방향으로 움직여도 직전 상태를 유지한다.
+function resolveCo2Level(x, level, th){
+  let changed = true;
+  while(changed){
+    changed = false;
+    if(level===0){
+      if(x>=th.L4){ level=2; changed=true; }
+      else if(x>=th.L2){ level=1; changed=true; }
+    } else if(level===1){
+      if(x>=th.L4){ level=2; changed=true; }
+      else if(x<th.L1){ level=0; changed=true; }
+    } else if(level===2){
+      if(x<th.L3){ level=1; changed=true; }
+    }
+  }
+  return level;
+}
+
+function renderCo2Panel(){
+  const th = getCo2Thresholds();
+  const xmin=400, xmax=1300;
+  const W=860,H=220,padL=50,padR=20,padT=16,padB=30;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const xPix = v => padL + (Math.min(Math.max(v,xmin),xmax)-xmin)/(xmax-xmin)*plotW;
+  const bandH = plotH/3;
+  const centerY = lvl => padT + (2-lvl)*bandH + bandH/2;
+
+  let svg = '';
+  for(let lvl=0; lvl<3; lvl++){
+    const y = padT + (2-lvl)*bandH;
+    svg += `<rect class="chart-band" x="${padL}" y="${y}" width="${plotW}" height="${bandH}" fill="${LEVEL_COLORS[lvl]}"/>`;
+    svg += `<text x="${padL+6}" y="${y+16}" font-size="11" fill="${LEVEL_COLORS[lvl]}" font-weight="600">${LEVEL_NAMES[lvl]}</text>`;
+  }
+  svg += `<rect class="chart-hyst-zone" x="${xPix(th.L1)}" y="${padT}" width="${xPix(th.L2)-xPix(th.L1)}" height="${plotH}"/>`;
+  svg += `<rect class="chart-hyst-zone" x="${xPix(th.L3)}" y="${padT}" width="${xPix(th.L4)-xPix(th.L3)}" height="${plotH}"/>`;
+  svg += `<text class="chart-text-dim" x="${xPix(xmin)}" y="${padT+plotH+14}" font-size="10" text-anchor="start">${xmin}</text>`;
+  [['L1',th.L1],['L2',th.L2],['L3',th.L3],['L4',th.L4]].forEach(([name,v])=>{
+    const x = xPix(v);
+    svg += `<line class="chart-line-neutral" x1="${x}" y1="${padT}" x2="${x}" y2="${padT+plotH}" stroke-dasharray="3,3" stroke-width="1"/>`;
+    svg += `<text class="chart-text" x="${x}" y="${padT+plotH+14}" font-size="10" text-anchor="middle">${v}</text>`;
+  });
+  const rp = [[xmin,0],[th.L2,0],[th.L2,1],[th.L4,1],[th.L4,2],[xmax,2]];
+  svg += `<path d="${rp.map((p,i)=>`${i===0?'M':'L'}${xPix(p[0])},${centerY(p[1])}`).join(' ')}" fill="none" stroke="#0b6cf0" stroke-width="3"/>`;
+  const fp = [[xmin,0],[th.L1,0],[th.L1,1],[th.L3,1],[th.L3,2],[xmax,2]];
+  svg += `<path d="${fp.map((p,i)=>`${i===0?'M':'L'}${xPix(p[0])},${centerY(p[1])}`).join(' ')}" fill="none" stroke="#d97706" stroke-width="3" stroke-dasharray="6,4"/>`;
+
+  const curVal = Number(document.getElementById('co2Slider').value);
+  const trend = co2Trend;
+  const markerColor = trend==='rising' ? '#0b6cf0' : '#d97706';
+  svg += `<line x1="${xPix(curVal)}" y1="${padT}" x2="${xPix(curVal)}" y2="${padT+plotH}" stroke="${markerColor}" stroke-width="2"/>`;
+  svg += `<circle cx="${xPix(curVal)}" cy="${padT}" r="5" fill="${markerColor}"/>`;
+
+  document.getElementById('co2Svg').innerHTML = svg;
+  document.getElementById('co2TrendIndicator').textContent = trend==='rising' ? '▲ 상승 중 감지됨' : '▼ 하강 중 감지됨';
+  document.getElementById('co2TrendIndicator').style.color = markerColor;
+
+  co2Level = resolveCo2Level(curVal, co2Level, th);
+  const level = co2Level;
+  const inDeadZone = (curVal>=th.L1 && curVal<th.L2) || (curVal>=th.L3 && curVal<th.L4);
+  const deadZoneNote = inDeadZone ? ` <span style="color:var(--warn);">(히스테리시스 구간 — 아직 임계값을 넘지 않아 직전 상태 유지)</span>` : '';
+  document.getElementById('co2ResultBadge').innerHTML =
+    `현재 CO2 ${curVal}ppm → <span class="badge lvl-${level}">${LEVEL_NAMES[level]}</span>${deadZoneNote}`;
+  return level;
+}
+
+function getDustThresholds(){
+  const o9 = getOpt05(9), o8 = getOpt05(8);
+  return { t9:{pm25:o9.pm25, pm10:o9.pm10}, t8:{pm25:o8.pm25, pm10:o8.pm10} };
+}
+
+function renderDustPanel(){
+  const th = getDustThresholds();
+  const W=420,H=420,pad=42,botPad=34;
+  const xmax = Math.max(100, th.t8.pm25+20);
+  const ymax = Math.max(200, th.t8.pm10+30);
+  const plotW=W-pad-20, plotH=H-pad-botPad;
+  const xPix = v => pad + Math.min(v,xmax)/xmax*plotW;
+  const yPix = v => (H-botPad) - Math.min(v,ymax)/ymax*plotH;
+
+  let svg = '';
+  svg += `<rect class="chart-region" x="${pad}" y="${pad}" width="${plotW}" height="${plotH}" fill="#d32f2f"/>`;
+  const x8=xPix(0), y8=yPix(th.t8.pm10), w8=xPix(th.t8.pm25)-xPix(0), h8=yPix(0)-yPix(th.t8.pm10);
+  svg += `<rect class="chart-region" x="${x8}" y="${y8}" width="${w8}" height="${h8}" fill="#e2a730"/>`;
+  const x9=xPix(0), y9=yPix(th.t9.pm10), w9=xPix(th.t9.pm25)-xPix(0), h9=yPix(0)-yPix(th.t9.pm10);
+  svg += `<rect class="chart-region" x="${x9}" y="${y9}" width="${w9}" height="${h9}" fill="#2a9d4a"/>`;
+  svg += `<rect x="${x8}" y="${y8}" width="${w8}" height="${h8}" fill="none" stroke="#e2a730" stroke-width="2" stroke-dasharray="5,3"/>`;
+  svg += `<rect x="${x9}" y="${y9}" width="${w9}" height="${h9}" fill="none" stroke="#2a9d4a" stroke-width="2" stroke-dasharray="5,3"/>`;
+  svg += `<line class="chart-line-neutral" x1="${pad}" y1="${H-botPad}" x2="${pad+plotW}" y2="${H-botPad}"/>`;
+  svg += `<line class="chart-line-neutral" x1="${pad}" y1="${pad}" x2="${pad}" y2="${H-botPad}"/>`;
+  svg += `<text class="chart-text" x="${pad+plotW/2}" y="${H-8}" font-size="11" text-anchor="middle">PM2.5 (㎍/㎥)</text>`;
+  svg += `<text class="chart-text" x="14" y="${pad+plotH/2}" font-size="11" text-anchor="middle" transform="rotate(-90 14 ${pad+plotH/2})">PM10 (㎍/㎥)</text>`;
+  svg += `<text x="${xPix(th.t9.pm25)}" y="${H-botPad+14}" font-size="10" fill="#2a9d4a" text-anchor="middle">${th.t9.pm25}</text>`;
+  svg += `<text x="${xPix(th.t8.pm25)}" y="${H-botPad+14}" font-size="10" fill="#e2a730" text-anchor="middle">${th.t8.pm25}</text>`;
+  svg += `<text x="${pad-6}" y="${yPix(th.t9.pm10)+3}" font-size="10" fill="#2a9d4a" text-anchor="end">${th.t9.pm10}</text>`;
+  svg += `<text x="${pad-6}" y="${yPix(th.t8.pm10)+3}" font-size="10" fill="#e2a730" text-anchor="end">${th.t8.pm10}</text>`;
+
+  const pm25 = Number(document.getElementById('pm25Slider').value);
+  const pm10 = Number(document.getElementById('pm10Slider').value);
+  svg += `<circle class="chart-marker-dot" cx="${xPix(pm25)}" cy="${yPix(pm10)}" r="6" stroke-width="2"/>`;
+
+  document.getElementById('dustSvg').innerHTML = svg;
+
+  let level;
+  if(pm25>=th.t8.pm25 || pm10>=th.t8.pm10) level=2;
+  else if(pm25>=th.t9.pm25 || pm10>=th.t9.pm10) level=1;
+  else level=0;
+  document.getElementById('dustResultBadge').innerHTML =
+    `현재 조건 (PM2.5 ${pm25} / PM10 ${pm10}) → <span class="badge lvl-${level}">${LEVEL_NAMES[level]}</span>`;
+  return level;
+}
+
+function renderSummary(){
+  const co2Level = renderCo2Panel();
+  const dustLevel = renderDustPanel();
+  const finalLevel = Math.max(co2Level, dustLevel);
+  let reason;
+  if(co2Level === dustLevel){
+    reason = `CO2·미세먼지 조건 모두 ${LEVEL_NAMES[finalLevel]}을 요구합니다.`;
+  } else if(finalLevel === co2Level){
+    reason = `CO2 조건(${LEVEL_NAMES[co2Level]})이 미세먼지 조건(${LEVEL_NAMES[dustLevel]})보다 높아 CO2 조건이 우선 적용됩니다.`;
+  } else {
+    reason = `미세먼지 조건(${LEVEL_NAMES[dustLevel]})이 CO2 조건(${LEVEL_NAMES[co2Level]})보다 높아 미세먼지 조건이 우선 적용됩니다.`;
+  }
+  document.getElementById('finalResultBadge').innerHTML =
+    `<span class="badge lvl-${finalLevel} big">${LEVEL_NAMES[finalLevel]}</span><div class="reason">${reason} (세게 도는 쪽 우선)</div>`;
+}
+
+function getCleanThresholds(){
+  const o10 = getOpt05(10), o11 = getOpt05(11);
+  return { minDwell:o10.min, lowerPpm:o10.ppm, upperPpm:o11.num };
+}
+
+const CLEAN_SCENARIOS = {
+  standard: {
+    label: '표준 (상승 후 하강)',
+    tmax: 34,
+    keyframes: [[0,450],[4,450],[9,950],[19,950],[24,450],[34,450]]
+  },
+  blip: {
+    label: '짧은 초과 (디바운스 확인)',
+    tmax: 40,
+    keyframes: [[0,450],[3,450],[5,880],[7,880],[9,450],[14,450],[19,950],[30,950],[34,450],[40,450]]
+  },
+  oscillate: {
+    label: '반복 전환 (여러 번 오르내림)',
+    tmax: 55,
+    keyframes: [[0,450],[3,450],[8,950],[16,950],[21,450],[29,450],[34,950],[42,950],[47,450],[55,450]]
+  },
+  gradual: {
+    label: '완만한 변화 (근접 유지 후 통과)',
+    tmax: 60,
+    keyframes: [[0,600],[3,600],[13,720],[28,720],[38,810],[42,810],[52,580],[60,580]]
+  }
+};
+
+function buildCleanTrace(scenarioId){
+  const scenario = CLEAN_SCENARIOS[scenarioId] || CLEAN_SCENARIOS.standard;
+  const keyframes = scenario.keyframes;
+  const tmax = scenario.tmax;
+  const trace = [];
+  for(let t=0; t<=tmax; t=+(t+0.1).toFixed(2)){
+    let v = keyframes[0][1];
+    for(let i=0;i<keyframes.length-1;i++){
+      const [t0,v0]=keyframes[i], [t1,v1]=keyframes[i+1];
+      if(t>=t0 && t<=t1){ v = v0 + (v1-v0)*(t1===t0?0:(t-t0)/(t1-t0)); break; }
+    }
+    trace.push({t, v});
+  }
+  return trace;
+}
+
+function simulateCleanMode(trace, th){
+  let mode='outdoor', timer=0, prevT=trace[0].t;
+  const result=[];
+  for(const pt of trace){
+    const dt = pt.t-prevT; prevT=pt.t;
+    if(mode==='outdoor'){
+      if(pt.v < th.lowerPpm){ timer += dt; } else { timer = 0; }
+      if(timer >= th.minDwell){ mode='circulation'; timer=0; }
+    } else {
+      if(pt.v >= th.upperPpm){ timer += dt; } else { timer = 0; }
+      if(timer >= th.minDwell){ mode='outdoor'; timer=0; }
+    }
+    result.push({t:pt.t, v:pt.v, mode, timer, timerRatio:Math.min(1,timer/th.minDwell)});
+  }
+  return result;
+}
+
+function renderCleanPanel(){
+  const th = getCleanThresholds();
+  const scenarioId = document.getElementById('cleanScenarioSelect').value;
+  const trace = buildCleanTrace(scenarioId);
+  const sim = simulateCleanMode(trace, th);
+  window._cleanSim = sim;
+
+  const W=860,H=284,padL=58,padR=20,padT=16,padB=94;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const tmax = CLEAN_SCENARIOS[scenarioId].tmax;
+  const scaleValues = trace.map(p=>p.v).concat([th.upperPpm, th.lowerPpm]);
+  const vmin = Math.min(...scaleValues)-50;
+  const vmax = Math.max(...scaleValues)+50;
+  const xPix = t => padL + t/tmax*plotW;
+  const yPix = v => padT + (vmax-v)/(vmax-vmin)*plotH;
+
+  let svg = '';
+
+  const yTickCount = 5;
+  for(let k=0;k<=yTickCount;k++){
+    const v = vmin + (vmax-vmin)*k/yTickCount;
+    const yv = yPix(v);
+    svg += `<line class="chart-line-grid" x1="${padL}" y1="${yv}" x2="${padL+plotW}" y2="${yv}" stroke-width="1"/>`;
+    svg += `<line class="chart-line-neutral" x1="${padL-4}" y1="${yv}" x2="${padL}" y2="${yv}"/>`;
+    svg += `<text class="chart-text-dim" x="${padL-8}" y="${yv+3}" font-size="9" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  svg += `<text class="chart-text" x="14" y="${padT+plotH/2}" font-size="10" text-anchor="middle" transform="rotate(-90 14 ${padT+plotH/2})">CO2 (ppm)</text>`;
+
+  let ci=0;
+  while(ci<sim.length){
+    const active = sim[ci].timer>0;
+    let cj=ci;
+    while(cj<sim.length && (sim[cj].timer>0)===active) cj++;
+    if(active){
+      const cx1=xPix(sim[ci].t), cx2=xPix(sim[Math.min(cj,sim.length-1)].t);
+      svg += `<rect class="chart-countdown-zone" x="${cx1}" y="${padT}" width="${Math.max(0,cx2-cx1)}" height="${plotH}"/>`;
+    }
+    ci=cj;
+  }
+
+  svg += `<line x1="${padL}" y1="${yPix(th.upperPpm)}" x2="${padL+plotW}" y2="${yPix(th.upperPpm)}" stroke="#0b6cf0" stroke-dasharray="4,3"/>`;
+  svg += `<text x="${padL+plotW}" y="${yPix(th.upperPpm)-4}" font-size="10" fill="#0b6cf0" text-anchor="end">외기청정 전환 상한 ${th.upperPpm}ppm</text>`;
+  svg += `<line x1="${padL}" y1="${yPix(th.lowerPpm)}" x2="${padL+plotW}" y2="${yPix(th.lowerPpm)}" stroke="#2a9d4a" stroke-dasharray="4,3"/>`;
+  svg += `<text x="${padL+plotW}" y="${yPix(th.lowerPpm)+14}" font-size="10" fill="#2a9d4a" text-anchor="end">순환청정 전환 하한 ${th.lowerPpm}ppm</text>`;
+
+  svg += `<path class="chart-trace" d="${trace.map((p,i)=>`${i===0?'M':'L'}${xPix(p.t)},${yPix(p.v)}`).join(' ')}" fill="none" stroke-width="2"/>`;
+
+  svg += `<line class="chart-trace" x1="${xPix(0)}" y1="${padT}" x2="${xPix(0)}" y2="${padT+plotH}" stroke-width="1.5" stroke-dasharray="2,2"/>`;
+  svg += `<text class="chart-text" x="${xPix(0)+4}" y="${padT+12}" font-size="10" font-weight="700">⚡ 전원 켜짐</text>`;
+  svg += `<text class="chart-text-dim" x="${xPix(0)+4}" y="${padT+24}" font-size="9">(자동환기 초기값: 외기청정)</text>`;
+
+  const stripY = padT+plotH+14, stripH=14;
+  let i=0;
+  while(i<sim.length){
+    const startMode = sim[i].mode; let j=i;
+    while(j<sim.length && sim[j].mode===startMode) j++;
+    const x1=xPix(sim[i].t), x2=xPix(sim[Math.min(j,sim.length-1)].t);
+    const color = startMode==='outdoor' ? '#0b6cf0' : '#2a9d4a';
+    svg += `<rect x="${x1}" y="${stripY}" width="${Math.max(0,x2-x1)}" height="${stripH}" fill="${color}" opacity="0.7"/>`;
+    i=j;
+  }
+  svg += `<text x="${padL}" y="${stripY+stripH+14}" font-size="10" fill="#0b6cf0">■ 외기청정</text>`;
+  svg += `<text x="${padL+70}" y="${stripY+stripH+14}" font-size="10" fill="#2a9d4a">■ 순환청정</text>`;
+
+  for(let t=0;t<=tmax;t+=5){
+    svg += `<text class="chart-text-dim" x="${xPix(t)}" y="${padT+plotH+10}" font-size="9" text-anchor="middle">${t}분</text>`;
+  }
+
+  const statusY = stripY+stripH+34;
+  svg += `<line class="chart-line-neutral" x1="${padL}" y1="${statusY-16}" x2="${padL+plotW}" y2="${statusY-16}" stroke-width="1" opacity="0.5"/>`;
+  svg += `<text id="cleanStatusLine" class="chart-text" x="${padL}" y="${statusY}" font-size="12"></text>`;
+
+  svg += `<g id="cleanPlayhead">
+    <line x1="0" y1="${padT}" x2="0" y2="${padT+plotH}" stroke="transparent" stroke-width="16"/>
+    <line x1="0" y1="${padT}" x2="0" y2="${padT+plotH}" stroke="#d32f2f" stroke-width="2"/>
+    <circle cx="0" cy="${padT}" r="6" fill="#d32f2f" stroke="#fff" stroke-width="1.5"/>
+  </g>`;
+
+  const svgEl = document.getElementById('cleanSvg');
+  svgEl.innerHTML = svg;
+  svgEl.dataset.padL = padL;
+  svgEl.dataset.plotW = plotW;
+  svgEl.dataset.tmax = tmax;
+  window._cleanTh = th;
+
+  cleanPlayback.playing = false;
+  if(cleanPlayback.rafId) cancelAnimationFrame(cleanPlayback.rafId);
+  cleanPlayback.elapsedMs = 0;
+  document.getElementById('playCleanBtn').textContent = '▶ 재생';
+  updateCleanStatus(0);
+}
+
+const CLEAN_MS_PER_SIMMIN = (6000/0.75)/34;
+const CLEAN_SPEED_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+let cleanPlayback = { playing:false, elapsedMs:0, rafId:null, lastTs:0 };
+
+function currentCleanDurationMs(){
+  const scenarioId = document.getElementById('cleanScenarioSelect').value;
+  return CLEAN_MS_PER_SIMMIN * CLEAN_SCENARIOS[scenarioId].tmax;
+}
+
+function updateCleanStatus(frac){
+  const svgEl = document.getElementById('cleanSvg');
+  const padL = Number(svgEl.dataset.padL), plotW = Number(svgEl.dataset.plotW), tmax = Number(svgEl.dataset.tmax);
+  const simT = frac*tmax;
+  const x = padL + frac*plotW;
+  document.getElementById('cleanPlayhead').setAttribute('transform', `translate(${x},0)`);
+
+  const sim = window._cleanSim, th = window._cleanTh;
+  let nearest = sim[0];
+  for(const p of sim){ if(p.t<=simT) nearest=p; else break; }
+  const modeName = nearest.mode==='outdoor' ? '외기청정' : '순환청정';
+  const modeColor = nearest.mode==='outdoor' ? '#0b6cf0' : '#2a9d4a';
+
+  let extra = '';
+  if(nearest.timer > 0){
+    const remainMin = th.minDwell - nearest.timer;
+    if(remainMin > 0.05){
+      extra = ` · 전환까지 약 ${Math.ceil(remainMin)}분 남음`;
+    }
+  }
+  const statusEl = document.getElementById('cleanStatusLine');
+  if(statusEl){
+    statusEl.innerHTML =
+      `${simT.toFixed(1)}분 경과 · 현재 CO2 ${Math.round(nearest.v)}ppm · 모드: <tspan font-weight="700" fill="${modeColor}">${modeName}</tspan>${extra}`;
+  }
+}
+
+function cleanFrame(now){
+  if(!cleanPlayback.playing) return;
+  const speed = CLEAN_SPEED_STEPS[Number(document.getElementById('cleanSpeedSlider').value)];
+  const dt = now - cleanPlayback.lastTs;
+  cleanPlayback.lastTs = now;
+  cleanPlayback.elapsedMs += dt*speed;
+  let frac = cleanPlayback.elapsedMs / currentCleanDurationMs();
+  if(frac >= 1){
+    frac = 1;
+    updateCleanStatus(frac);
+    pauseCleanScenario();
+    return;
+  }
+  updateCleanStatus(frac);
+  cleanPlayback.rafId = requestAnimationFrame(cleanFrame);
+}
+
+function playCleanScenario(){
+  if(cleanPlayback.playing) return;
+  if(cleanPlayback.elapsedMs >= currentCleanDurationMs()) cleanPlayback.elapsedMs = 0;
+  cleanPlayback.playing = true;
+  cleanPlayback.lastTs = performance.now();
+  document.getElementById('playCleanBtn').textContent = '⏸ 일시정지';
+  cleanPlayback.rafId = requestAnimationFrame(cleanFrame);
+}
+
+function pauseCleanScenario(){
+  cleanPlayback.playing = false;
+  if(cleanPlayback.rafId) cancelAnimationFrame(cleanPlayback.rafId);
+  document.getElementById('playCleanBtn').textContent = '▶ 재생';
+}
+
+function toggleCleanScenario(){
+  if(cleanPlayback.playing) pauseCleanScenario();
+  else playCleanScenario();
+}
+
+function restartCleanScenario(){
+  if(cleanPlayback.rafId) cancelAnimationFrame(cleanPlayback.rafId);
+  cleanPlayback.elapsedMs = 0;
+  cleanPlayback.playing = false;
+  playCleanScenario();
+}
+
+function svgPointFromEvent(svgEl, evt){
+  const pt = svgEl.createSVGPoint();
+  pt.x = evt.clientX;
+  pt.y = evt.clientY;
+  const ctm = svgEl.getScreenCTM();
+  if(!ctm) return {x:0, y:0};
+  return pt.matrixTransform(ctm.inverse());
+}
+
+let cleanDragging = false;
+
+function cleanFracFromEvent(evt){
+  const svgEl = document.getElementById('cleanSvg');
+  const p = svgPointFromEvent(svgEl, evt);
+  const padL = Number(svgEl.dataset.padL), plotW = Number(svgEl.dataset.plotW);
+  return Math.min(1, Math.max(0, (p.x - padL) / plotW));
+}
+
+function setupCleanDrag(){
+  const svgEl = document.getElementById('cleanSvg');
+  svgEl.addEventListener('pointerdown', (evt)=>{
+    if(!evt.target.closest('#cleanPlayhead')) return;
+    cleanDragging = true;
+    pauseCleanScenario();
+    if(svgEl.setPointerCapture && evt.pointerId!==undefined) svgEl.setPointerCapture(evt.pointerId);
+    const frac = cleanFracFromEvent(evt);
+    cleanPlayback.elapsedMs = frac * currentCleanDurationMs();
+    updateCleanStatus(frac);
+    evt.preventDefault();
+  });
+  svgEl.addEventListener('pointermove', (evt)=>{
+    if(!cleanDragging) return;
+    const frac = cleanFracFromEvent(evt);
+    cleanPlayback.elapsedMs = frac * currentCleanDurationMs();
+    updateCleanStatus(frac);
+  });
+  window.addEventListener('pointerup', ()=>{ cleanDragging = false; });
+}
+setupCleanDrag();
+
+function refreshViz(){
+  renderSummary();
+  renderCleanPanel();
+}
+
+document.getElementById('co2Slider').addEventListener('input', ()=>{
+  const newVal = Number(document.getElementById('co2Slider').value);
+  if(newVal > co2PrevVal) co2Trend = 'rising';
+  else if(newVal < co2PrevVal) co2Trend = 'falling';
+  co2PrevVal = newVal;
+  document.getElementById('co2SliderVal').textContent = newVal;
+  renderSummary();
+});
+document.getElementById('pm25Slider').addEventListener('input', ()=>{
+  document.getElementById('pm25SliderVal').textContent = document.getElementById('pm25Slider').value;
+  renderSummary();
+});
+document.getElementById('pm10Slider').addEventListener('input', ()=>{
+  document.getElementById('pm10SliderVal').textContent = document.getElementById('pm10Slider').value;
+  renderSummary();
+});
+document.getElementById('playCleanBtn').addEventListener('click', toggleCleanScenario);
+document.getElementById('restartCleanBtn').addEventListener('click', restartCleanScenario);
+document.getElementById('cleanScenarioSelect').addEventListener('change', renderCleanPanel);
+document.getElementById('cleanSpeedSlider').addEventListener('input', ()=>{
+  const speed = CLEAN_SPEED_STEPS[Number(document.getElementById('cleanSpeedSlider').value)];
+  document.getElementById('cleanSpeedVal').textContent = speed + 'x';
+});
+
+// ---- 검증(디코딩) 탭 ----
+
+function decodeInput(raw){
+  const noSep = raw.replace(/[\s-]/g,'').toUpperCase();
+  if(noSep.length===0) return {error:'코드를 입력해주세요.'};
+  if(!/^[0-9A-F]+$/.test(noSep)) return {error:'0-9, A-F 이외의 문자가 포함되어 있습니다.'};
+  if(noSep.length===24) return reconstructAndValidate(noSep);
+  if(noSep.length===20){
+    const full = '0'+noSep.slice(0,5)+'1'+noSep.slice(5,10)+'2'+noSep.slice(10,15)+'3'+noSep.slice(15,20);
+    return reconstructAndValidate(full);
+  }
+  return {error:`입력 길이가 올바르지 않습니다. (구분자 제외 유효 글자 수: ${noSep.length}자 — 사람이 읽는 코드는 24자, Raw 코드는 20자여야 합니다)`};
+}
+
+function reconstructAndValidate(full){
+  const seriesDigit = full[1];
+  let seriesKey = null;
+  if(seriesDigit==='2') seriesKey='02';
+  else if(seriesDigit==='5') seriesKey='05';
+  const warnings = [];
+  if(seriesKey){
+    Object.entries(SERIES[seriesKey].fixedMap).forEach(([seg,val])=>{
+      const idx = Number(seg)-1;
+      if(full[idx] !== val){
+        warnings.push(`SEG${seg} 자리는 고정값 '${val}'이어야 하지만 입력값은 '${full[idx]}'입니다. (장치에서는 무시되고 0으로 처리될 수 있습니다)`);
+      }
+    });
+  }
+  return {full, seriesKey, seriesDigit, warnings};
+}
+
+function renderVerifyResult(result){
+  const container = document.getElementById('verifyResult');
+  container.innerHTML = '';
+
+  if(result.error){
+    container.innerHTML = `<div class="banner error">${result.error}</div>`;
+    return;
+  }
+  if(!result.seriesKey){
+    container.innerHTML = `<div class="banner error">지원하지 않는 계열입니다 (SEG2 = '${result.seriesDigit}'). 02 계열 또는 05 계열 코드만 해석할 수 있습니다.</div>`;
+    return;
+  }
+
+  const key = result.seriesKey;
+  const cfg = SERIES[key];
+  const chars = result.full.split('');
+  const diff = diffOf(key, chars);
+
+  container.innerHTML += `<div class="banner info">감지된 계열: <b>${key} 계열 설치 옵션</b></div>`;
+
+  if(result.warnings.length){
+    container.innerHTML += `<div class="banner warning">확인이 필요한 부분<ul>${result.warnings.map(w=>`<li>${w}</li>`).join('')}</ul></div>`;
+  }
+
+  const list = document.createElement('div');
+  list.className = 'decode-list';
+  cfg.fields.forEach(f=>{
+    const val = chars[f.seg-1];
+    const match = f.options.find(o=>o.value===val);
+    const row = document.createElement('div');
+    row.className = 'decode-row';
+    if(match){
+      const changed = val !== f.default;
+      if(changed) row.classList.add('changed');
+      row.innerHTML = `<span class="desc"><span class="seg-tag">SEG${f.seg}</span>${f.label}</span><span class="val">${val} : ${match.text}</span>`;
+    } else {
+      row.classList.add('unknown');
+      row.innerHTML = `<span class="desc"><span class="seg-tag">SEG${f.seg}</span>${f.label}</span><span class="val">${val} : 정의되지 않은 값 (자동 0 처리됨)</span>`;
+    }
+    list.appendChild(row);
+  });
+  container.appendChild(list);
+
+  const outDiv = document.createElement('div');
+  outDiv.className = 'output';
+  outDiv.style.position = 'static';
+  outDiv.innerHTML = `
+    <div class="code-row">
+      <span class="row-label">옵션코드</span>
+      <div class="code-display">${formattedHTML(chars, diff)}</div>
+      <button class="btn" id="verifyCopyFormatted">복사</button>
+    </div>
+    <div class="code-row">
+      <span class="row-label">옵션코드 Raw</span>
+      <div class="code-display">${rawHTML(chars, diff)}</div>
+      <button class="btn" id="verifyCopyRaw">복사</button>
+    </div>
+  `;
+  container.appendChild(outDiv);
+  document.getElementById('verifyCopyFormatted').addEventListener('click', ()=>copyText(formattedText(chars)));
+  document.getElementById('verifyCopyRaw').addEventListener('click', ()=>copyText(rawText(chars)));
+}
+
+document.getElementById('verifyBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('verifyInput').value;
+  renderVerifyResult(decodeInput(input));
+});
+document.getElementById('verifyInput').addEventListener('keydown', (e)=>{
+  if(e.key==='Enter' && !e.shiftKey){
+    e.preventDefault();
+    document.getElementById('verifyBtn').click();
+  }
+});
+
+renderPanel('02');
+renderPanel('05');
+renderVizSegPickers();
+document.getElementById('formatHint').textContent = SERIES['02'].formatHint;
+updateCode('02');
+</script>
+</body>
+</html>
