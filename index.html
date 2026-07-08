@@ -1252,12 +1252,27 @@ function co2DeadZoneNote(curVal, th){
   return inDeadZone ? ` <span style="color:var(--warn);">(히스테리시스 구간 — 아직 임계값을 넘지 않아 직전 상태 유지)</span>` : '';
 }
 
-// 모바일에서는 그래프 표시 범위(xmin~xmax)가 SEG22 기준으로 좁아지므로,
-// 테스트 슬라이더의 min/max도 같이 맞추고 현재 값이 범위를 벗어나면 안쪽으로 당겨온다.
-function syncCo2SliderRange(geo){
+// 모바일에서는 그래프 표시 범위(xmin~xmax)가 SEG22 기준으로 좁아지므로 테스트 슬라이더의
+// min/max도 같이 맞춘다. SEG22 자체가 바뀌면(=임계값이 바뀌면) 사용자가 옮겨둔 테스트값은
+// 더 이상 의미가 없으므로 새 범위의 기본값(시작값+50)으로 리셋하고, 그 외의 재렌더링
+// (탭 전환, 화면 회전 등)에서는 사용자가 설정한 값을 유지하되 범위를 벗어난 경우만 당겨온다.
+let lastSeg22 = null;
+function syncCo2SliderRange(geo, th){
   const slider = document.getElementById('co2Slider');
   slider.min = geo.xmin;
   slider.max = geo.xmax;
+
+  if(lastSeg22 !== th.seg22){
+    lastSeg22 = th.seg22;
+    const defaultVal = geo.xmin + 50;
+    slider.value = defaultVal;
+    co2PrevVal = defaultVal;
+    co2Trend = 'rising';
+    co2Level = 0;
+    document.getElementById('co2SliderVal').textContent = defaultVal;
+    return;
+  }
+
   const val = Number(slider.value);
   const clamped = Math.min(Math.max(val, geo.xmin), geo.xmax);
   if(clamped !== val){
@@ -1271,7 +1286,7 @@ function renderCo2Panel(){
   const th = getCo2Thresholds();
   const geo = getCo2Geometry(th);
   const { xmin, xmax, W, H, padL, padT, plotW, plotH, xPix, centerY } = geo;
-  syncCo2SliderRange(geo);
+  syncCo2SliderRange(geo, th);
   document.getElementById('co2Svg').setAttribute('viewBox', `0 0 ${W} ${H}`);
 
   let svg = '';
@@ -1285,6 +1300,7 @@ function renderCo2Panel(){
   svg += `<rect class="chart-hyst-zone" x="${xPix(th.L1)}" y="${padT}" width="${xPix(th.L2)-xPix(th.L1)}" height="${plotH}"/>`;
   svg += `<rect class="chart-hyst-zone" x="${xPix(th.L3)}" y="${padT}" width="${xPix(th.L4)-xPix(th.L3)}" height="${plotH}"/>`;
   svg += `<text class="chart-text-dim" x="${xPix(xmin)}" y="${padT+plotH+16}" font-size="12" text-anchor="start">${xmin}</text>`;
+  svg += `<text class="chart-text-dim" x="${xPix(xmax)}" y="${padT+plotH+16}" font-size="12" text-anchor="end">${xmax}</text>`;
   [['L1',th.L1],['L2',th.L2],['L3',th.L3],['L4',th.L4]].forEach(([name,v])=>{
     const x = xPix(v);
     svg += `<line class="chart-line-neutral" x1="${x}" y1="${padT}" x2="${x}" y2="${padT+plotH}" stroke-dasharray="3,3" stroke-width="1"/>`;
