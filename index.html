@@ -738,7 +738,7 @@
         <div class="clean-custom-msg" id="cleanCustomMsg"></div>
       </div>
       <div class="clean-scroll-wrap" id="cleanScrollWrap">
-        <svg id="cleanSvg" viewBox="0 0 860 284" class="viz-svg"></svg>
+        <svg id="cleanSvg" viewBox="0 0 860 332" class="viz-svg"></svg>
       </div>
       <div class="viz-controls">
         <button class="btn secondary" id="playCleanBtn">▶ 재생</button>
@@ -746,7 +746,7 @@
         <label>재생 속도: <span id="cleanSpeedVal">1x</span></label>
         <input type="range" id="cleanSpeedSlider" min="0" max="7" step="1" value="3" autocomplete="off">
       </div>
-      <div class="viz-hint">빨간 재생 마커는 직접 드래그해서 원하는 시점으로 이동할 수 있습니다. 그래프 하단의 안내선 아래에 현재 재생 상태가 표시됩니다. 예시로 CO2 농도가 오르내리는 가상 시나리오를 재생합니다. 임계값을 넘어도 SEG10에 설정된 시간만큼 그 상태가 유지되어야 실제로 모드가 전환됩니다(디바운싱). 옅은 노란색 배경: 조건은 충족됐지만 아직 전환 대기(카운트다운) 중인 구간입니다.</div>
+      <div class="viz-hint">빨간 재생 마커는 직접 드래그해서 원하는 시점으로 이동할 수 있습니다. 그래프 하단의 안내선 아래에 현재 재생 상태가 표시됩니다. 예시로 CO2 농도가 오르내리는 가상 시나리오를 재생합니다. 임계값을 넘어도 SEG10에 설정된 시간만큼 그 상태가 유지되어야 실제로 모드가 전환됩니다(디바운싱). 옅은 노란색 배경: 조건은 충족됐지만 아직 전환 대기(카운트다운) 중인 구간입니다. <span style="color:var(--accent);font-weight:600;">옅은 색 하단 막대는 같은 시나리오에서 SEG22 조건에 따라 함께 바뀌는 풍량(①번 패널의 설정 + 1분 뒤 전환)을 참고용으로 보여줍니다. 이 패널에서는 CO2 농도에 따른 영향만을 보여주기 위하여, 미세먼지 농도(SEG8 · SEG9)에 따른 풍량 전환은 고려되지 않았습니다.</span></div>
     </div>
   </section>
 
@@ -1590,14 +1590,39 @@ function simulateCleanMode(trace, th){
   return result;
 }
 
+// CO2->풍량 로직(패널① resolveCo2Level)을 그대로 재사용하되, 순간 목표 레벨이 1분 이상
+// 유지되어야 실제로 확정되도록 디바운스 래퍼를 씌운다. resolveCo2Level은 while 루프로
+// 레벨을 한 번에 여러 단계 건너뛸 수 있어서("auto low에서 CO2가 단번에 SEG22 도달 시
+// high를 거치지 않고 바로 turbo") 이 스킵 동작도 별도 처리 없이 자연히 재현된다.
+const FAN_DELAY_MIN = 1;
+function simulateFanSpeed(trace, co2Th){
+  let level=0, timer=0, pendingTarget=0, prevT=trace[0].t;
+  const result=[];
+  for(const pt of trace){
+    const dt = pt.t-prevT; prevT=pt.t;
+    const target = resolveCo2Level(pt.v, level, co2Th);
+    if(target !== level){
+      if(target !== pendingTarget){ pendingTarget = target; timer = 0; }
+      timer += dt;
+      if(timer >= FAN_DELAY_MIN){ level = target; timer = 0; pendingTarget = level; }
+    } else {
+      timer = 0; pendingTarget = level;
+    }
+    result.push({t:pt.t, level});
+  }
+  return result;
+}
+
 function renderCleanPanel(){
   const th = getCleanThresholds();
   const scenarioId = document.getElementById('cleanScenarioSelect').value;
   const trace = buildCleanTrace(scenarioId);
   const sim = simulateCleanMode(trace, th);
   window._cleanSim = sim;
+  const fanSim = simulateFanSpeed(trace, getCo2Thresholds());
+  window._cleanFanSim = fanSim;
 
-  const W=860,H=284,padL=64,padR=20,padT=16,padB=104;
+  const W=860,H=332,padL=64,padR=20,padT=16,padB=152;
   const plotW=W-padL-padR, plotH=H-padT-padB;
   const tmax = getActiveTmax(scenarioId);
   const scaleValues = trace.map(p=>p.v).concat([th.upperPpm, th.lowerPpm]);
@@ -1665,11 +1690,26 @@ function renderCleanPanel(){
   svg += `<text x="${padL}" y="${stripY+stripH+16}" font-size="12" font-weight="600" fill="#0b6cf0">■ 외기청정</text>`;
   svg += `<text x="${padL+76}" y="${stripY+stripH+16}" font-size="12" font-weight="600" fill="#2a9d4a">■ 순환청정</text>`;
 
+  // 참고 정보: SEG10·SEG11과는 무관하지만, 같은 시나리오에서 SEG22 조건에 따라
+  // 풍량이 어떻게 바뀌는지 함께 보여준다(패널①과 동일한 히스테리시스 판정 재사용).
+  const fanStripY = stripY+stripH+34, fanStripH=14;
+  let fi=0;
+  while(fi<fanSim.length){
+    const startLevel = fanSim[fi].level; let fj=fi;
+    while(fj<fanSim.length && fanSim[fj].level===startLevel) fj++;
+    const fx1=xPix(fanSim[fi].t), fx2=xPix(fanSim[Math.min(fj,fanSim.length-1)].t);
+    svg += `<rect class="chart-region" x="${fx1}" y="${fanStripY}" width="${Math.max(0,fx2-fx1)}" height="${fanStripH}" fill="${LEVEL_COLORS[startLevel]}"/>`;
+    fi=fj;
+  }
+  svg += `<text x="${padL}" y="${fanStripY+fanStripH+16}" font-size="12" font-weight="600" fill="${LEVEL_COLORS[0]}" opacity="0.6">■ ${LEVEL_NAMES[0]}</text>`;
+  svg += `<text x="${padL+70}" y="${fanStripY+fanStripH+16}" font-size="12" font-weight="600" fill="${LEVEL_COLORS[1]}" opacity="0.6">■ ${LEVEL_NAMES[1]}</text>`;
+  svg += `<text x="${padL+140}" y="${fanStripY+fanStripH+16}" font-size="12" font-weight="600" fill="${LEVEL_COLORS[2]}" opacity="0.6">■ ${LEVEL_NAMES[2]}</text>`;
+
   for(let t=0;t<=tmax;t+=5){
     svg += `<text class="chart-text-dim" x="${xPix(t)}" y="${padT+plotH+11}" font-size="11" text-anchor="middle">${t}분</text>`;
   }
 
-  const statusY = stripY+stripH+40;
+  const statusY = fanStripY+fanStripH+40;
   svg += `<line class="chart-line-neutral" x1="${padL}" y1="${statusY-18}" x2="${padL+plotW}" y2="${statusY-18}" stroke-width="1" opacity="0.5"/>`;
   svg += `<text id="cleanStatusLine" class="chart-text" x="${padL}" y="${statusY}" font-size="13"></text>`;
 
@@ -1709,11 +1749,16 @@ function updateCleanStatus(frac){
   const x = padL + frac*plotW;
   document.getElementById('cleanPlayhead').setAttribute('transform', `translate(${x},0)`);
 
-  const sim = window._cleanSim, th = window._cleanTh;
+  const sim = window._cleanSim, th = window._cleanTh, fanSim = window._cleanFanSim;
   let nearest = sim[0];
   for(const p of sim){ if(p.t<=simT) nearest=p; else break; }
   const modeName = nearest.mode==='outdoor' ? '외기청정' : '순환청정';
   const modeColor = nearest.mode==='outdoor' ? '#0b6cf0' : '#2a9d4a';
+
+  let fanNearest = fanSim[0];
+  for(const p of fanSim){ if(p.t<=simT) fanNearest=p; else break; }
+  const fanName = LEVEL_NAMES[fanNearest.level];
+  const fanColor = LEVEL_COLORS[fanNearest.level];
 
   let extra = '';
   if(nearest.timer > 0){
@@ -1725,7 +1770,7 @@ function updateCleanStatus(frac){
   const statusEl = document.getElementById('cleanStatusLine');
   if(statusEl){
     statusEl.innerHTML =
-      `${simT.toFixed(1)}분 경과 · 현재 CO2 ${Math.round(nearest.v)}ppm · 모드: <tspan font-weight="700" fill="${modeColor}">${modeName}</tspan>${extra}`;
+      `${simT.toFixed(1)}분 경과 · 현재 CO2 ${Math.round(nearest.v)}ppm · 모드: <tspan font-weight="700" fill="${modeColor}">${modeName}</tspan>${extra} · 풍량: <tspan font-weight="700" fill="${fanColor}" opacity="0.6">${fanName}</tspan>`;
   }
 }
 
