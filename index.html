@@ -372,10 +372,30 @@
     border-color:var(--panel-border);
     color:var(--panel-glow-dim);
   }
+  #genOutputToggleBtn{
+    background:var(--accent);
+    color:var(--accent-contrast);
+    border:none;
+  }
+  #genOutputToggleBtn:hover{ background:var(--accent-dark); }
   .actions{
     display:flex;
-    justify-content:flex-end;
+    justify-content:space-between;
     margin-top:6px;
+  }
+  .output-body{
+    overflow:hidden;
+    max-height:400px;
+    opacity:1;
+    transition:max-height 0.25s ease, opacity 0.2s ease;
+  }
+  .output.collapsed .output-body{
+    max-height:0;
+    opacity:0;
+    pointer-events:none;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .output-body{ transition:none; }
   }
   .page-footer{
     max-width:980px;
@@ -762,18 +782,21 @@
   </section>
 
   <div class="output" id="genOutput">
-    <div class="code-row">
-      <span class="row-label">옵션코드<span class="hint">직접 입력 가능</span></span>
-      <div class="code-display" id="codeFormatted" contenteditable="true" spellcheck="false"></div>
-      <button class="btn" id="copyFormattedBtn">복사</button>
+    <div class="output-body" id="genOutputBody">
+      <div class="code-row">
+        <span class="row-label">옵션코드<span class="hint">직접 입력 가능</span></span>
+        <div class="code-display" id="codeFormatted" contenteditable="true" spellcheck="false"></div>
+        <button class="btn" id="copyFormattedBtn">복사</button>
+      </div>
+      <div class="code-row">
+        <span class="row-label">옵션코드 Raw<span class="hint">직접 입력 가능</span></span>
+        <div class="code-display" id="codeRaw" contenteditable="true" spellcheck="false"></div>
+        <button class="btn" id="copyRawBtn">복사</button>
+      </div>
+      <div class="code-msg" id="codeMsg"></div>
     </div>
-    <div class="code-row">
-      <span class="row-label">옵션코드 Raw<span class="hint">직접 입력 가능</span></span>
-      <div class="code-display" id="codeRaw" contenteditable="true" spellcheck="false"></div>
-      <button class="btn" id="copyRawBtn">복사</button>
-    </div>
-    <div class="code-msg" id="codeMsg"></div>
     <div class="actions">
+      <button class="btn secondary" id="genOutputToggleBtn" type="button" aria-expanded="true" aria-controls="genOutputBody">숨기기</button>
       <button class="btn secondary" id="resetBtn">기본값으로 초기화</button>
     </div>
   </div>
@@ -1068,6 +1091,25 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 document.getElementById('resetBtn').addEventListener('click', ()=>resetDefaults(currentSeries));
+
+function setGenOutputCollapsed(collapsed){
+  const output = document.getElementById('genOutput');
+  const btn = document.getElementById('genOutputToggleBtn');
+  if(!output || !btn) return;
+  output.classList.toggle('collapsed', collapsed);
+  btn.textContent = collapsed ? '펼치기' : '숨기기';
+  btn.setAttribute('aria-expanded', String(!collapsed));
+  try{ localStorage.setItem('acombo-lcd-collapsed', collapsed ? '1' : '0'); }catch(e){}
+}
+document.getElementById('genOutputToggleBtn').addEventListener('click', ()=>{
+  const isCollapsed = document.getElementById('genOutput').classList.contains('collapsed');
+  setGenOutputCollapsed(!isCollapsed);
+});
+(function initGenOutputCollapsed(){
+  let collapsed = false;
+  try{ collapsed = localStorage.getItem('acombo-lcd-collapsed') === '1'; }catch(e){}
+  setGenOutputCollapsed(collapsed);
+})();
 document.getElementById('copyFormattedBtn').addEventListener('click', ()=>copyText(state.formattedText));
 document.getElementById('copyRawBtn').addEventListener('click', ()=>copyText(state.rawText));
 
