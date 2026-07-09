@@ -592,7 +592,8 @@
   @media (pointer: coarse){
     .playhead-hit{ stroke-width:130; }
     .playhead-dot{ r:12; }
-    #genOutput .code-display{ font-family:var(--sans); font-weight:800; }
+    #genOutput .code-display, #verifyOutput .code-display{ font-family:var(--sans); font-weight:800; }
+    textarea#verifyInput{ font-family:var(--sans); font-size:16px; font-weight:700; }
   }
 
   .clean-scroll-toggle{ display:none; }
@@ -624,9 +625,9 @@
     .code-display{ font-size:15px; letter-spacing:1px; padding:10px; }
     .code-row .btn{ align-self:flex-end; }
     .decode-row{ flex-direction:column; align-items:flex-start; gap:3px; }
-    #genOutput .code-row .btn{ display:none; }
+    #genOutput .code-row .btn, #verifyOutput .code-row .btn{ display:none; }
     #genOutput .row-label .hint{ display:inline-block; margin-top:0; margin-left:6px; vertical-align:middle; }
-    #genOutput .code-display{ font-family:var(--sans); font-size:17px; font-weight:800; }
+    #genOutput .code-display, #verifyOutput .code-display{ font-family:var(--sans); font-size:17px; font-weight:800; }
     #genOutput .code-msg{ min-height:0; margin-top:0; }
     #genOutput .actions{ margin-top:2px; }
     .viz-controls input[type=range]{ min-width:100%; }
@@ -1984,6 +1985,7 @@ function renderVerifyResult(result){
 
   const outDiv = document.createElement('div');
   outDiv.className = 'output';
+  outDiv.id = 'verifyOutput';
   outDiv.style.position = 'static';
   outDiv.innerHTML = `
     <div class="code-row">
