@@ -221,6 +221,22 @@
     padding:12px 14px;
     transition:background .15s, border-color .15s;
   }
+  @keyframes fieldGlow{
+    0%,100%{ box-shadow:0 0 0 0 transparent; border-color:var(--border); }
+    50%{ box-shadow:0 0 16px 4px var(--accent); border-color:var(--accent); }
+  }
+  .field.field-glow{ animation:fieldGlow .7s ease-in-out 3; }
+  @keyframes legendGlow{
+    0%,100%{ background:transparent; box-shadow:0 0 0 0 transparent; }
+    50%{ background:var(--accent-soft); box-shadow:0 0 12px 3px var(--accent); }
+  }
+  .diagram-legend li.legend-glow{ animation:legendGlow .7s ease-in-out 3; border-radius:8px; }
+  .diagram-legend li{ cursor:pointer; }
+  @keyframes diagramGlow{
+    0%,100%{ filter:drop-shadow(0 0 0 transparent); }
+    50%{ filter:drop-shadow(0 0 10px var(--accent)) drop-shadow(0 0 4px var(--accent)); }
+  }
+  .diagram-highlight{ animation:diagramGlow .7s ease-in-out 3; }
   .field label{
     display:block;
     font-size:12px;
@@ -509,6 +525,66 @@
   .viz-svg text{ font-family:var(--sans); }
   .dust-svg{ max-width:420px; margin:0 auto; }
 
+  .diagram-svg{ max-width:900px; margin:0 auto; display:block; }
+  .diagram-clickable{ transition:opacity .15s; }
+  .diagram-clickable:hover{ opacity:0.7; }
+  .diagram-case{ fill:#eef1f3; stroke:var(--muted); stroke-width:2.5; }
+  :root[data-theme="dark"] .diagram-case{ fill:#17212a; }
+  .diagram-room-label{ font-family:var(--sans); font-weight:800; opacity:0.13; fill:var(--text); }
+  .diagram-sensor-label{ fill:var(--muted); font-weight:600; }
+  .diagram-element{ fill:var(--accent-soft); stroke:var(--accent); stroke-width:2.5; }
+  .diagram-filter-fine{ fill:var(--panel-bg); stroke:var(--panel-border); stroke-width:1.5; }
+  .diagram-filter-dust{ fill:#d9bb7a; stroke:#a8874a; stroke-width:1.5; }
+  .diagram-evap{ fill:#a8d0f0; stroke:#2f6fb0; stroke-width:1.5; }
+  .diagram-cond{ fill:#f0aba5; stroke:#c04a3f; stroke-width:1.5; }
+  :root[data-theme="dark"] .diagram-filter-dust{ fill:#8a6f3a; stroke:#c9a876; }
+  :root[data-theme="dark"] .diagram-evap{ fill:#2a5a8a; stroke:#7ec8f2; }
+  :root[data-theme="dark"] .diagram-cond{ fill:#8a3a32; stroke:#f2a19c; }
+  .diagram-port-cap{ fill:var(--accent-soft); stroke:var(--accent-dark); stroke-width:2; }
+  .diagram-title{ fill:var(--text); font-weight:800; }
+  .diagram-subtitle{ fill:var(--muted); font-weight:500; }
+  .diagram-label{ fill:var(--text); font-weight:800; }
+  .diagram-sublabel{ fill:var(--muted); font-weight:500; }
+  .diagram-side-label{ fill:var(--muted); font-weight:600; }
+  .diagram-badge-circle{ fill:var(--accent); }
+  .diagram-badge-text{ fill:var(--accent-contrast); font-weight:800; }
+  .diagram-damper-auto{ fill:none; stroke:var(--text); stroke-width:1.5; }
+  .diagram-damper-manual{ fill:none; stroke:var(--warn); stroke-width:2.2; }
+  .diagram-flow-bypass{ stroke:var(--accent-dark); fill:none; opacity:0.75; }
+  .diagram-pipe-label{ fill:var(--text); font-weight:600; }
+  .diagram-legend{
+    list-style:none;
+    margin:16px 0 0;
+    padding:0;
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:10px 18px;
+  }
+  .diagram-legend li{
+    font-size:12.5px;
+    color:var(--text);
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    line-height:1.45;
+  }
+  .diagram-legend .num{
+    flex:0 0 auto;
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    background:var(--accent);
+    color:var(--accent-contrast);
+    font-size:11px;
+    font-weight:800;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-top:1px;
+  }
+  .diagram-legend .txt b{ display:block; }
+  .diagram-legend .txt span{ color:var(--muted); font-size:11.5px; }
+
   .chart-line-neutral{ stroke:var(--chart-line); }
   .chart-line-grid{ stroke:var(--chart-grid); }
   .chart-text{ fill:var(--chart-text); font-weight:600; }
@@ -690,6 +766,7 @@
     <button class="tab-btn" data-tab="05"><span class="tab-num">05</span>설치 옵션</button>
     <button class="tab-btn" data-tab="viz"><span class="tab-num">VZ</span>동작 시각화</button>
     <button class="tab-btn" data-tab="verify"><span class="tab-num">CK</span>코드 검증</button>
+    <button class="tab-btn" data-tab="info"><span class="tab-num">ST</span>내부 구조</button>
   </div>
 
   <div class="format-hint" id="formatHint"></div>
@@ -781,6 +858,272 @@
     <div id="verifyResult"></div>
   </section>
 
+  <section id="panel-info" class="panel">
+    <div class="viz-intro banner info">본체 내 주요 덕트 연결부·필터·댐퍼 구성을 나타낸 개략도이며, 실제 부품 배치·비율과는 다를 수 있습니다. <b>다이어그램이나 아래 설명을 클릭하면 서로 대응하는 부분이 강조 표시됩니다.</b> 일부 항목들은 클릭하여 바로 연관된 설치 옵션으로 이동할 수 있습니다. (예: ③집진필터)</div>
+
+    <div class="viz-card">
+      <svg viewBox="0 0 900 520" class="viz-svg diagram-svg">
+        <defs>
+          <!-- 9번: 원형 전동 버터플라이 댐퍼(원형 덕트 단면 + 중심 축을 가진 회전 블레이드 + 상단 모터 액추에이터). viewBox 자체를 세로로 길게 그려 원이 찌그러지지 않도록 함 -->
+          <symbol id="dmpAuto" viewBox="0 0 40 52">
+            <rect x="8" y="1" width="24" height="10" rx="2" style="fill:var(--text);stroke:none;"/>
+            <text x="20" y="9" text-anchor="middle" style="font-size:6.5px;font-weight:800;fill:var(--card);font-family:var(--sans);">AUTO</text>
+            <line x1="20" y1="11" x2="20" y2="21" class="diagram-damper-auto"/>
+            <circle cx="20" cy="35" r="13" class="diagram-damper-auto"/>
+            <line x1="10" y1="43" x2="30" y2="27" style="stroke:var(--text);stroke-width:2.4;stroke-linecap:round;"/>
+            <circle cx="20" cy="35" r="1.8" style="fill:var(--text);stroke:none;"/>
+          </symbol>
+          <!-- 10번: 역풍방지댐퍼. viewBox를 세로로 길게 그려 회전 블레이드가 찌그러지지 않도록 함 -->
+          <symbol id="dmpManual" viewBox="0 0 40 52">
+            <circle cx="20" cy="37" r="14" class="diagram-damper-manual"/>
+            <rect x="7" y="34.5" width="26" height="5" rx="2" transform="rotate(45 20 37)" style="fill:none;stroke:var(--warn);stroke-width:2;"/>
+            <circle cx="20" cy="37" r="2" style="fill:var(--card);stroke:var(--warn);stroke-width:1.3;"/>
+          </symbol>
+          <symbol id="eevSym" viewBox="0 0 24 16">
+            <polygon points="1,1 12,8 1,15" style="fill:none;stroke:var(--text);stroke-width:1.8;stroke-linejoin:round;"/>
+            <polygon points="23,1 12,8 23,15" style="fill:none;stroke:var(--text);stroke-width:1.8;stroke-linejoin:round;"/>
+          </symbol>
+          <symbol id="sensorIcon" viewBox="0 0 24 24">
+            <rect x="2" y="2" width="20" height="20" rx="4" style="fill:var(--card);stroke:var(--accent-dark);stroke-width:1.5;"/>
+            <rect x="7" y="7" width="10" height="10" rx="1.5" style="fill:none;stroke:var(--accent-dark);stroke-width:1.6;"/>
+            <circle cx="12" cy="12" r="2" style="fill:var(--accent-dark);stroke:none;"/>
+            <line x1="9" y1="4.5" x2="9" y2="7" style="stroke:var(--accent-dark);stroke-width:1.3;"/>
+            <line x1="15" y1="4.5" x2="15" y2="7" style="stroke:var(--accent-dark);stroke-width:1.3;"/>
+            <line x1="9" y1="17" x2="9" y2="19.5" style="stroke:var(--accent-dark);stroke-width:1.3;"/>
+            <line x1="15" y1="17" x2="15" y2="19.5" style="stroke:var(--accent-dark);stroke-width:1.3;"/>
+          </symbol>
+          <symbol id="pSensorIcon" viewBox="0 0 24 24">
+            <rect x="2" y="2" width="20" height="20" rx="4" style="fill:var(--card);stroke:var(--accent-dark);stroke-width:1.5;"/>
+            <text x="12" y="16" text-anchor="middle" style="font-size:10px;font-weight:800;fill:var(--accent-dark);font-family:var(--sans);">&#916;P</text>
+          </symbol>
+          <marker id="arrBlue" markerUnits="userSpaceOnUse" markerWidth="36" markerHeight="36" refX="24" refY="18" orient="auto">
+            <path d="M0,0 L36,18 L0,36 Z" style="fill:#0b6cf0;stroke:none;"/>
+          </marker>
+          <marker id="arrOrange" markerUnits="userSpaceOnUse" markerWidth="36" markerHeight="36" refX="24" refY="18" orient="auto">
+            <path d="M0,0 L36,18 L0,36 Z" style="fill:#d97706;stroke:none;"/>
+          </marker>
+        </defs>
+
+        <text x="450" y="26" text-anchor="middle" class="diagram-title" style="font-size:15px;">내부 구조 개략도 (평면 개념도)</text>
+        <text x="450" y="44" text-anchor="middle" class="diagram-subtitle" style="font-size:11px;">실제 배치·축척과 다를 수 있는 이해용 도식입니다</text>
+        <text x="100" y="96" text-anchor="middle" class="diagram-side-label" style="font-size:14px;">◀ 실외측 연결</text>
+        <text x="800" y="96" text-anchor="middle" class="diagram-side-label" style="font-size:14px;">실내측 연결 ▶</text>
+
+        <!-- casing: EA·SA측(상단, y110~300)과 OA·RA측(하단, y300~490) 높이를 동일(190)하게 맞춤 + 가로로 약간 넓혀 비율 조정 -->
+        <rect x="220" y="110" width="460" height="380" rx="16" class="diagram-case"/>
+
+        <!-- 각 실 중앙에 옅은 배경 글자로 실 이름 표시 -->
+        <text x="260" y="158" text-anchor="middle" class="diagram-room-label" style="font-size:42px;">EA</text>
+        <text x="620" y="158" text-anchor="middle" class="diagram-room-label" style="font-size:42px;">SA</text>
+        <text x="260" y="463" text-anchor="middle" class="diagram-room-label" style="font-size:42px;">OA</text>
+
+        <!-- 센서 모듈(1.5배 크기): OA(온도·습도, OA 글자 오른쪽) / SA(온도, SA 글자 왼쪽) / RA(온도·습도·CO2·미세먼지, RA 글자 왼쪽) -->
+        <use href="#sensorIcon" x="332" y="448" width="27" height="27"/>
+        <text x="345" y="483" text-anchor="middle" class="diagram-sensor-label" style="font-size:10px;">온도·습도</text>
+
+        <use href="#sensorIcon" x="554" y="131" width="27" height="27"/>
+        <text x="567" y="129" text-anchor="middle" class="diagram-sensor-label" style="font-size:10px;">온도</text>
+
+        <use href="#sensorIcon" x="554" y="444" width="27" height="27"/>
+        <text x="567" y="479" text-anchor="middle" class="diagram-sensor-label" style="font-size:8.5px;">온·습·CO2·먼지</text>
+        <text x="620" y="463" text-anchor="middle" class="diagram-room-label" style="font-size:42px;">RA</text>
+
+        <!-- 내부 격벽: EA·SA·OA·RA 4개 실을 십자형으로 격리. 소자가 차지하는 구간(모서리 사이)은 비워 소자를 통해서만 서로 연결되도록 함. OA-RA 사이 격벽에는 11번 댐퍼가 실제로 설치되어 있어 그 구간도 비움 -->
+        <line x1="450" y1="110" x2="450" y2="201" style="stroke:var(--muted);stroke-width:4;stroke-linecap:square;"/>
+        <line x1="450" y1="399" x2="450" y2="419" style="stroke:var(--muted);stroke-width:4;stroke-linecap:square;"/>
+        <line x1="450" y1="469" x2="450" y2="490" style="stroke:var(--muted);stroke-width:4;stroke-linecap:square;"/>
+        <line x1="220" y1="300" x2="351" y2="300" style="stroke:var(--muted);stroke-width:4;stroke-linecap:square;"/>
+        <line x1="549" y1="300" x2="680" y2="300" style="stroke:var(--muted);stroke-width:4;stroke-linecap:square;"/>
+
+        <!-- main duct paths: 포트 높이 그대로 수평 진입(본체 안쪽까지) -> 45도 대각선으로 소자·필터 중심을 정확히 관통 -> 반대쪽 수평 배출 -->
+        <!-- OA(하단좌, y420, 수평) -> 45도 대각선으로 소자 중심(450,300) 관통 -> SA(상단우, y180, 수평) -->
+        <path d="M110,420 L330,420 L570,180 L790,180" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" style="stroke:#0b6cf0;"/>
+        <!-- RA(하단우, y420, 수평) -> 45도 대각선으로 소자 중심(450,300) 관통 -> EA(상단좌, y180, 수평) -->
+        <path d="M790,420 L570,420 L330,180 L110,180" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" style="stroke:#d97706;"/>
+
+        <!-- heat exchange element: 45도 회전된 마름모, 2x2 분할선으로 4분할 표현 -->
+        <g class="diagram-clickable diagram-item-1" style="cursor:pointer;" onclick="jumpToLegend(1)">
+        <rect x="380" y="230" width="140" height="140" transform="rotate(45 450 300)" class="diagram-element"/>
+        <line x1="450" y1="230" x2="450" y2="370" transform="rotate(45 450 300)" style="stroke:var(--accent-dark);opacity:0.5;stroke-width:1.5;"/>
+        <line x1="380" y1="300" x2="520" y2="300" transform="rotate(45 450 300)" style="stroke:var(--accent-dark);opacity:0.5;stroke-width:1.5;"/>
+        <circle cx="450" cy="300" r="12" class="diagram-badge-circle"/>
+        <text x="450" y="305" text-anchor="middle" class="diagram-badge-text" style="font-size:12px;">1</text>
+        </g>
+
+        <!-- RA측 극세필터: 소자 우하단(RIGHT-DOWN) 변에 밀착 -->
+        <g class="diagram-clickable diagram-item-2" style="cursor:pointer;" onclick="jumpToLegend(2)">
+        <rect x="520" y="230" width="25" height="140" transform="rotate(45 450 300)" class="diagram-filter-fine"/>
+        <circle cx="508" cy="358" r="10" class="diagram-badge-circle"/>
+        <text x="508" y="362" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">2</text>
+        </g>
+
+        <!-- OA측 필터: 소자 좌하단(DOWN-LEFT) 변에 밀착. 집진필터(소자 쪽) -> 극세필터(OA 쪽) -->
+        <g class="diagram-clickable diagram-item-3" style="cursor:pointer;" onclick="jumpToOption('05',12)">
+        <rect x="380" y="370" width="140" height="25" transform="rotate(45 450 300)" class="diagram-filter-dust"/>
+        <circle cx="392" cy="359" r="10" class="diagram-badge-circle"/>
+        <text x="392" y="363" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">3</text>
+        </g>
+        <g class="diagram-clickable diagram-item-4" style="cursor:pointer;" onclick="jumpToLegend(4)">
+        <rect x="380" y="395" width="140" height="25" transform="rotate(45 450 300)" class="diagram-filter-fine"/>
+        <circle cx="374" cy="376" r="10" class="diagram-badge-circle"/>
+        <text x="374" y="380" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">4</text>
+        </g>
+
+        <!-- SA측 증발기/응축기: 소자 우상단(UP-RIGHT) 변과의 간격을 더 넓혀 배치(냉매관이 y=300 격벽 아래로 내려가지 않도록). 증발기(소자 쪽, 파랑) -> 응축기(SA 쪽, 빨강) -->
+        <g class="diagram-clickable" style="cursor:pointer;" onclick="jumpToOption('02',4)">
+        <g class="diagram-item-5">
+        <rect x="380" y="170" width="140" height="20" transform="rotate(45 450 300)" class="diagram-evap"/>
+        <circle cx="535" cy="216" r="10" class="diagram-badge-circle"/>
+        <text x="535" y="220" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">5</text>
+        </g>
+        <g class="diagram-item-6">
+        <rect x="380" y="142" width="140" height="20" transform="rotate(45 450 300)" class="diagram-cond"/>
+        <circle cx="555" cy="196" r="10" class="diagram-badge-circle"/>
+        <text x="555" y="200" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">6</text>
+        </g>
+        </g>
+
+        <!-- 냉매IN: 본체 안쪽까지 수평 직진 -> 꺾여서 응축기 우측 짧은변 중심으로 45도 직선 진입. 모두 y&lt;300(SA실 내부)에 위치. EEV2는 응축기에 근접 -->
+        <path d="M695,260 L619,260 L604,245" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:#9b59b6;"/>
+        <circle cx="695" cy="260" r="5" style="fill:#9b59b6;"/>
+        <g class="diagram-clickable diagram-item-7" style="cursor:pointer;" onclick="jumpToLegend(7)">
+        <use href="#eevSym" x="602" y="245" width="24" height="16" transform="rotate(-45 614 253)"/>
+        <circle cx="630" cy="237" r="10" class="diagram-badge-circle"/>
+        <text x="630" y="241" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">7</text>
+        </g>
+
+        <!-- 응축기 좌측 짧은변 -> 배관(양쪽에 짧은 stub로 파이프 형태를 보이게) -> EEV1(배관 가운데) -> 배관 -> 증발기 좌측 짧은변. 소자·모듈과 동일한 45도 기울기 -->
+        <path d="M505,146 L495,136 L475,156 L485,166" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:#9b59b6;"/>
+        <g class="diagram-clickable diagram-item-8" style="cursor:pointer;" onclick="jumpToLegend(8)">
+        <use href="#eevSym" x="473" y="138" width="24" height="16" transform="rotate(-45 485 146)"/>
+        <circle cx="470" cy="131" r="10" class="diagram-badge-circle"/>
+        <text x="470" y="135" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">8</text>
+        </g>
+
+        <!-- 증발기 우측 짧은변에서 45도 직선으로 나온 뒤 꺾여서 본체 밖 냉매OUT으로 수평 직진. y=280으로 SA실(y&lt;300) 내부 유지 -->
+        <path d="M584,265 L599,280 L695,280" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="stroke:#9b59b6;"/>
+        <circle cx="695" cy="280" r="5" style="fill:#9b59b6;"/>
+
+        <!-- 케이싱 벽을 관통하는 지점의 덕트 플랜지(collar) 표시: 여기가 OA/EA/SA/RA 포트임을 나타냄 -->
+        <rect x="216" y="407" width="8" height="26" class="diagram-port-cap"/>
+        <rect x="216" y="167" width="8" height="26" class="diagram-port-cap"/>
+        <rect x="676" y="167" width="8" height="26" class="diagram-port-cap"/>
+        <rect x="676" y="407" width="8" height="26" class="diagram-port-cap"/>
+
+        <!-- motorized dampers built into OA / RA: 포트 플랜지 직후, 케이싱 안쪽. 원(local cy=35)이 OA/RA 경로(y=420)에 세로 중심이 맞도록 배치 -->
+        <g class="diagram-clickable diagram-item-9" style="cursor:pointer;" onclick="jumpToLegend(9)">
+        <use href="#dmpAuto" x="230" y="385" width="40" height="52"/>
+        <circle cx="250" cy="372" r="10" class="diagram-badge-circle"/>
+        <text x="250" y="376" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">9</text>
+        </g>
+        <g class="diagram-clickable diagram-item-9" style="cursor:pointer;" onclick="jumpToLegend(9)">
+        <use href="#dmpAuto" x="630" y="385" width="40" height="52"/>
+        <circle cx="650" cy="372" r="10" class="diagram-badge-circle"/>
+        <text x="650" y="376" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">9</text>
+        </g>
+
+        <!-- 역풍방지댐퍼(⑩, SA·EA 별도 설치): 덕트 사각형(local center y=36.5)이 EA/SA 경로(y=180)에 세로 중심이 맞도록 배치 -->
+        <g class="diagram-clickable diagram-item-10" style="cursor:pointer;" onclick="jumpToLegend(10)">
+        <use href="#dmpManual" x="170" y="144" width="40" height="52"/>
+        <circle cx="190" cy="153" r="10" class="diagram-badge-circle"/>
+        <text x="190" y="157" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">10</text>
+        </g>
+        <g class="diagram-clickable diagram-item-10" style="cursor:pointer;" onclick="jumpToLegend(10)">
+        <use href="#dmpManual" x="690" y="144" width="40" height="52"/>
+        <circle cx="710" cy="153" r="10" class="diagram-badge-circle"/>
+        <text x="710" y="157" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">10</text>
+        </g>
+
+        <!-- OA-RA 댐퍼: 격벽에 설치된 여닫이문(swing door) 형태 전동댐퍼. 하단 힌지 점을 중심으로 문짝이 비스듬히 열림(9번의 중심축 버터플라이와 구분) -->
+        <g class="diagram-clickable diagram-item-11" style="cursor:pointer;" onclick="jumpToLegend(11)">
+        <rect x="441" y="419" width="18" height="50" rx="2" class="diagram-damper-auto"/>
+        <line x1="445" y1="464" x2="455" y2="424" style="stroke:var(--text);stroke-width:2.5;stroke-linecap:round;"/>
+        <circle cx="445" cy="464" r="2.2" style="fill:var(--text);stroke:none;"/>
+        <circle cx="475" cy="444" r="10" class="diagram-badge-circle"/>
+        <text x="475" y="448" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">11</text>
+        </g>
+
+        <!-- OA-SA bypass damper: OA 경로에서 출발(11번보다 케이싱 쪽으로, 필터③④와 간격 확보) -> 측면(세로) 구간에 댐퍼 배치 -> 상단 우회 -> 소자(1)-증발기(5) 사이 SA 경로의 정중앙에 45도로 꺾여 합류. 이 댐퍼도 여닫이문 형태 -->
+        <path d="M280,420 L280,140 L418,140 L514,236" class="diagram-flow-bypass" fill="none" stroke-width="4.5" stroke-dasharray="7,4"/>
+        <g class="diagram-clickable diagram-item-12" style="cursor:pointer;" onclick="jumpToOption('05',21)">
+        <rect x="268" y="213" width="24" height="24" rx="2" class="diagram-damper-auto"/>
+        <line x1="272" y1="233" x2="288" y2="217" style="stroke:var(--text);stroke-width:2.5;stroke-linecap:round;"/>
+        <circle cx="272" cy="233" r="2" style="fill:var(--text);stroke:none;"/>
+        <circle cx="298" cy="225" r="10" class="diagram-badge-circle"/>
+        <text x="298" y="229" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">12</text>
+        </g>
+
+        <!-- 압력센서(ΔP): 12번 댐퍼 바로 아래, 필터 부하(차압)를 측정해 필터 사용시간 계산에 활용 -->
+        <g class="diagram-clickable diagram-item-15" style="cursor:pointer;" onclick="jumpToLegend(15)">
+        <use href="#pSensorIcon" x="268" y="253" width="24" height="24"/>
+        <circle cx="298" cy="265" r="10" class="diagram-badge-circle"/>
+        <text x="298" y="269" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">15</text>
+        </g>
+
+        <!-- 12번이 OA 경로 및 SA 경로(소자-증발기 사이 정중앙)에 연결되는 지점 표시 -->
+        <circle cx="280" cy="420" r="5" style="fill:var(--card);stroke:var(--text);stroke-width:2;"/>
+        <circle cx="514" cy="236" r="5" style="fill:var(--card);stroke:var(--text);stroke-width:2;"/>
+
+        <!-- OA / EA (실외측, 좌) / SA / RA (실내측, 우) 포트 -->
+        <rect x="86" y="410" width="14" height="20" class="diagram-port-cap"/>
+        <line x1="125" y1="420" x2="161" y2="420" marker-end="url(#arrBlue)" style="stroke:#0b6cf0;stroke-width:12;"/>
+        <text x="93" y="448" text-anchor="middle" class="diagram-label" style="font-size:14px;">OA</text>
+        <text x="93" y="461" text-anchor="middle" class="diagram-sublabel" style="font-size:10px;">외기 도입(실외)</text>
+
+        <rect x="86" y="170" width="14" height="20" class="diagram-port-cap"/>
+        <line x1="161" y1="180" x2="125" y2="180" marker-end="url(#arrOrange)" style="stroke:#d97706;stroke-width:12;"/>
+        <text x="93" y="152" text-anchor="middle" class="diagram-label" style="font-size:14px;">EA</text>
+        <text x="93" y="139" text-anchor="middle" class="diagram-sublabel" style="font-size:10px;">배기 배출(실외)</text>
+
+        <rect x="800" y="170" width="14" height="20" class="diagram-port-cap"/>
+        <line x1="739" y1="180" x2="775" y2="180" marker-end="url(#arrBlue)" style="stroke:#0b6cf0;stroke-width:12;"/>
+        <text x="807" y="152" text-anchor="middle" class="diagram-label" style="font-size:14px;">SA</text>
+        <text x="807" y="139" text-anchor="middle" class="diagram-sublabel" style="font-size:10px;">급기 공급(실내)</text>
+
+        <rect x="800" y="410" width="14" height="20" class="diagram-port-cap"/>
+        <line x1="775" y1="420" x2="739" y2="420" marker-end="url(#arrOrange)" style="stroke:#d97706;stroke-width:12;"/>
+        <text x="807" y="448" text-anchor="middle" class="diagram-label" style="font-size:14px;">RA</text>
+        <text x="807" y="461" text-anchor="middle" class="diagram-sublabel" style="font-size:10px;">환기 배출(실내)</text>
+
+        <!-- 냉매배관 IN/OUT 라벨, 배수관: 우측면 SA-RA 사이에 위치. 배수관은 공기 경로(청/주황), 냉매관(보라)과 겹치지 않게 청록색 -->
+        <g class="diagram-clickable diagram-item-13" style="cursor:pointer;" onclick="jumpToLegend(13)">
+        <text x="703" y="264" text-anchor="start" class="diagram-pipe-label" style="font-size:11px;">액관 (냉매 IN)</text>
+        <text x="703" y="284" text-anchor="start" class="diagram-pipe-label" style="font-size:11px;">가스관 (냉매 OUT)</text>
+        <circle cx="815" cy="264" r="10" class="diagram-badge-circle"/>
+        <text x="815" y="268" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">13</text>
+        </g>
+
+        <!-- 배수관: 냉매 IN보다 위쪽에 배치 -->
+        <g class="diagram-clickable diagram-item-14" style="cursor:pointer;" onclick="jumpToOption('02',20)">
+        <line x1="650" y1="225" x2="695" y2="225" style="stroke:#0891b2;stroke-width:4;stroke-linecap:round;"/>
+        <circle cx="695" cy="225" r="5" style="fill:#0891b2;"/>
+        <text x="703" y="229" text-anchor="start" class="diagram-pipe-label" style="font-size:11px;">배수관</text>
+        <circle cx="750" cy="225" r="10" class="diagram-badge-circle"/>
+        <text x="750" y="229" text-anchor="middle" class="diagram-badge-text" style="font-size:10px;">14</text>
+        </g>
+      </svg>
+
+      <ul class="diagram-legend">
+        <li id="legend-1" onclick="highlightDiagram(1)"><span class="num">1</span><span class="txt"><b>전열교환소자</b><span>사용자가 탈착 가능. 1~3년 주기로 청소 및 교체 권장.</span></span></li>
+        <li id="legend-2" onclick="highlightDiagram(2)"><span class="num">2</span><span class="txt"><b>극세필터 (RA측)</b><span>사용자가 탈착 가능. 3개월에 1회 청소 권장.</span></span></li>
+        <li onclick="highlightDiagram(3)"><span class="num">3</span><span class="txt"><b>집진필터 (OA측)</b><span>사용자가 탈착 가능. 6개월에 1회 교체 권장. 미세먼지 집진용.</span></span></li>
+        <li id="legend-4" onclick="highlightDiagram(4)"><span class="num">4</span><span class="txt"><b>극세필터 (OA측)</b><span>사용자가 탈착 가능. 3개월에 1회 청소 권장. 외기를 제일 처음 받아들이는 필터로 RA측 필터에 비해 더 빨리 오염됨.</span></span></li>
+        <li onclick="highlightDiagram(5)"><span class="num">5</span><span class="txt"><b>증발기 (제습모듈)</b><span>EEV1(⑧)을 통해 교축팽창된 냉매가 흘러 SA 공기를 냉각·제습.</span></span></li>
+        <li onclick="highlightDiagram(6)"><span class="num">6</span><span class="txt"><b>응축기 (제습모듈)</b><span>EEV2(⑦)를 거친 고온·고압 냉매가 흘러 제습된 차가운 공기를 재가열(정온제습).</span></span></li>
+        <li id="legend-7" onclick="highlightDiagram(7)"><span class="num">7</span><span class="txt"><b>EEV2 (전동변)</b><span>액관과 응축기(⑥) 사이에 위치. 본체로 들어오는 냉매의 수문장 역할을 하며 고온·고압 냉매를 응축기로 유입시킴. 중간개방이 없으며 완전개방(480) 또는 폐쇄(0 or 35) 제어만 있음.</span></span></li>
+        <li id="legend-8" onclick="highlightDiagram(8)"><span class="num">8</span><span class="txt"><b>EEV1 (전동변)</b><span>응축기(⑥)와 증발기(⑤) 사이에 위치. 응축기를 지나온 냉매를 교축·감압시켜 증발기를 냉각시킴.</span></span></li>
+        <li id="legend-9" onclick="highlightDiagram(9)"><span class="num">9</span><span class="txt"><b>전동댐퍼 (내장, 원형 버터플라이형)</b><span>OA·RA 포트 플랜지 바로 안쪽(케이싱 내부)에 기본 내장. 에어콤보가 동작 모드 및 상태에 따라 직접 제어.</span></span></li>
+        <li id="legend-10" onclick="highlightDiagram(10)"><span class="num">10</span><span class="txt"><b>역풍방지댐퍼 (별도 설치 필요, 원형)</b><span>결로를 방지하기 위해 시공 시 SA·EA 포트 플랜지 바로 바깥쪽(케이싱 외부)에 별도로 설치 필요. 스프링/중력식으로 개폐되어 미가동 시 외기 유입·실내 공기 역류를 방지.</span></span></li>
+        <li id="legend-11" onclick="highlightDiagram(11)"><span class="num">11</span><span class="txt"><b>OA-RA 댐퍼 (여닫이문형)</b><span>OA실-RA실을 가르는 격벽에 설치된 세로 여닫이문형 전동댐퍼. 외기청정 시 폐쇄되고 순환청정 시 개방됨. 기밀성이 낮아 닫혀있어도 외기가 RA실에 일부 침투할 수 있음.</span></span></li>
+        <li onclick="highlightDiagram(12)"><span class="num">12</span><span class="txt"><b>Bypass 댐퍼 (OA-SA, 여닫이문형 추정)</b><span>필터를 통과한 OA가 전열교환소자를 우회할 수 있는 추가 경로를 제어하는 전동댐퍼. 전열교환소자 상단에 위치하며 면적이 좁음. 순환청정 및 후드모드에서는 무조건 개방됨. 외기청정 시에는 05 계열 설치 옵션 SEG21의 설정에 따라 개방 여부가 결정되며, 댐퍼 개방 시 SA 팬 부하가 줄어들기 때문에 속도가 1 step 감소.</span></span></li>
+        <li id="legend-13" onclick="highlightDiagram(13)"><span class="num">13</span><span class="txt"><b>액관/가스관 (냉매 IN/OUT 배관)</b><span>냉매 흐름: IN → EEV2(⑦) → 응축기(⑥) → EEV1(⑧) → 증발기(⑤) → OUT.</span></span></li>
+        <li onclick="highlightDiagram(14)"><span class="num">14</span><span class="txt"><b>배수관</b><span>제습 시 발생하는 응축수를 배출하는 단자. 에어콤보 본체의 수평이 잘 맞춰지지 않을 경우 배수가 제대로 되지 않아 본체에서 물이 샐 수 있음.</span></span></li>
+        <li id="legend-15" onclick="highlightDiagram(15)"><span class="num">15</span><span class="txt"><b>압력센서 (ΔP)</b><span>12번 bypass 댐퍼 경로 내에 위치(추정). OA 챔버 내의 압력을 측정하여 필터(③④)의 상태를 간접적으로 파악해 필터 사용시간(교체 알람) 계산에 활용.</span></span></li>
+      </ul>
+      <div class="viz-hint" style="margin-top:6px;">OA·SA·RA실에는 공기 상태 측정을 위한 센서 모듈이 존재하며, EA실에는 센서가 없습니다.</div>
+    </div>
+  </section>
+
   <div class="output" id="genOutput">
     <div class="output-body" id="genOutputBody">
       <div class="code-row">
@@ -865,7 +1208,7 @@ const SERIES = {
     fixedMap: {1:'0',2:'2',3:'0',6:'0',7:'1',12:'0',13:'2',14:'0',17:'0',19:'3',21:'0',22:'0',23:'0',24:'0'},
     fields: [
       {seg:4, label:'운전모드', options:[{value:'0',text:'정온제습'},{value:'1',text:'냉방제습'}], default:'0',
-        note:'제습 동작 시 SA에서 토출되는 바람의 온도'},
+        note:'제습 동작 시 SA에서 토출되는 바람의 온도, 냉방제습은 결로 방지를 위해 보온덕트 시공 필요'},
       {seg:5, label:'중앙제어', options:[{value:'0',text:'사용안함'},{value:'1',text:'사용'}], default:'1'},
       {seg:8, label:'필터교체 알람 (전열환기)', options:hexOptions(10,10), default:'A'},
       {seg:9, label:'필터교체 알람 (보통환기)', options:hexOptions(30,10), default:'9'},
@@ -1044,7 +1387,7 @@ async function copyText(text){
   toast._timer = setTimeout(()=>toast.classList.remove('show'), 1400);
 }
 
-const TAB_KEYS = ['02','05','viz','verify'];
+const TAB_KEYS = ['02','05','viz','verify','info'];
 
 function activateTab(key, updateHash){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===key));
@@ -1074,6 +1417,43 @@ function activateTab(key, updateHash){
   if(updateHash!==false){
     try{ if(location.hash.replace('#','')!==key) location.hash = key; }catch(e){}
   }
+}
+
+function jumpToOption(seriesKey, seg){
+  activateTab(seriesKey);
+  const select = document.getElementById('sel-'+seriesKey+'-'+seg);
+  const field = select && select.closest('.field');
+  if(!field) return;
+  field.scrollIntoView({behavior:'smooth', block:'center'});
+  field.classList.remove('field-glow');
+  void field.offsetWidth;
+  field.classList.add('field-glow');
+  clearTimeout(field._glowTimer);
+  field._glowTimer = setTimeout(()=>field.classList.remove('field-glow'), 2200);
+}
+
+function highlightDiagram(num){
+  const items = document.querySelectorAll('.diagram-item-'+num);
+  if(!items.length) return;
+  items[0].scrollIntoView({behavior:'smooth', block:'center'});
+  items.forEach(el=>{
+    el.classList.remove('diagram-highlight');
+    void el.getBBox && el.offsetWidth;
+    el.classList.add('diagram-highlight');
+    clearTimeout(el._glowTimer);
+    el._glowTimer = setTimeout(()=>el.classList.remove('diagram-highlight'), 2200);
+  });
+}
+
+function jumpToLegend(num){
+  const li = document.getElementById('legend-'+num);
+  if(!li) return;
+  li.scrollIntoView({behavior:'smooth', block:'center'});
+  li.classList.remove('legend-glow');
+  void li.offsetWidth;
+  li.classList.add('legend-glow');
+  clearTimeout(li._glowTimer);
+  li._glowTimer = setTimeout(()=>li.classList.remove('legend-glow'), 2200);
 }
 
 function getInitialTabKey(){
