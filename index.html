@@ -528,6 +528,23 @@
   .diagram-svg{ max-width:900px; margin:0 auto; display:block; }
   .diagram-clickable{ transition:opacity .15s; }
   .diagram-clickable:hover{ opacity:0.7; }
+  .diagram-title-row{
+    position:relative;
+    max-width:900px;
+    margin:0 auto 10px;
+    min-height:34px;
+  }
+  .diagram-title-row .btn{
+    position:absolute;
+    right:0;
+    top:50%;
+    transform:translateY(-50%);
+    padding:8px 14px;
+    font-size:12.5px;
+  }
+  .diagram-title-text{ text-align:center; }
+  .diagram-title-main{ font-size:15px; font-weight:800; color:var(--text); }
+  .diagram-title-sub{ font-size:11px; color:var(--muted); margin-top:2px; }
   .diagram-case{ fill:#eef1f3; stroke:var(--muted); stroke-width:2.5; }
   :root[data-theme="dark"] .diagram-case{ fill:#17212a; }
   .diagram-room-label{ font-family:var(--sans); font-weight:800; opacity:0.13; fill:var(--text); }
@@ -862,7 +879,14 @@
     <div class="viz-intro banner info">본체 내 주요 덕트 연결부·필터·댐퍼 구성을 나타낸 개략도이며, 실제 부품 배치·비율과는 다를 수 있습니다. <b>다이어그램이나 아래 설명을 클릭하면 서로 대응하는 부분이 강조 표시됩니다.</b> 일부 항목들은 클릭하여 바로 연관된 설치 옵션으로 이동할 수 있습니다. (예: ③집진필터)</div>
 
     <div class="viz-card">
-      <svg viewBox="0 0 900 520" class="viz-svg diagram-svg">
+      <div class="diagram-title-row">
+        <div class="diagram-title-text">
+          <div class="diagram-title-main">내부 구조 개략도 (평면 개념도)</div>
+          <div class="diagram-title-sub">실제 배치·축척과 다를 수 있는 이해용 도식입니다</div>
+        </div>
+        <button class="btn secondary" id="flowModeBtn" type="button">순환청정 경로 보기</button>
+      </div>
+      <svg viewBox="0 70 900 450" class="viz-svg diagram-svg">
         <defs>
           <!-- 9번: 원형 전동 버터플라이 댐퍼(원형 덕트 단면 + 중심 축을 가진 회전 블레이드 + 상단 모터 액추에이터). viewBox 자체를 세로로 길게 그려 원이 찌그러지지 않도록 함 -->
           <symbol id="dmpAuto" viewBox="0 0 40 52">
@@ -902,10 +926,15 @@
           <marker id="arrOrange" markerUnits="userSpaceOnUse" markerWidth="36" markerHeight="36" refX="24" refY="18" orient="auto">
             <path d="M0,0 L36,18 L0,36 Z" style="fill:#d97706;stroke:none;"/>
           </marker>
+          <marker id="arrGreen" markerUnits="userSpaceOnUse" markerWidth="36" markerHeight="36" refX="24" refY="18" orient="auto">
+            <path d="M0,0 L36,18 L0,36 Z" style="fill:#16a34a;stroke:none;"/>
+          </marker>
+          <linearGradient id="circGrad" gradientUnits="userSpaceOnUse" x1="790" y1="420" x2="790" y2="350">
+            <stop offset="0%" stop-color="#d97706"/>
+            <stop offset="100%" stop-color="#16a34a"/>
+          </linearGradient>
         </defs>
 
-        <text x="450" y="26" text-anchor="middle" class="diagram-title" style="font-size:15px;">내부 구조 개략도 (평면 개념도)</text>
-        <text x="450" y="44" text-anchor="middle" class="diagram-subtitle" style="font-size:11px;">실제 배치·축척과 다를 수 있는 이해용 도식입니다</text>
         <text x="100" y="96" text-anchor="middle" class="diagram-side-label" style="font-size:14px;">◀ 실외측 연결</text>
         <text x="800" y="96" text-anchor="middle" class="diagram-side-label" style="font-size:14px;">실내측 연결 ▶</text>
 
@@ -936,10 +965,16 @@
         <line x1="549" y1="300" x2="680" y2="300" style="stroke:var(--muted);stroke-width:4;stroke-linecap:square;"/>
 
         <!-- main duct paths: 포트 높이 그대로 수평 진입(본체 안쪽까지) -> 45도 대각선으로 소자·필터 중심을 정확히 관통 -> 반대쪽 수평 배출 -->
+        <g id="flowOutdoor">
         <!-- OA(하단좌, y420, 수평) -> 45도 대각선으로 소자 중심(450,300) 관통 -> SA(상단우, y180, 수평) -->
         <path d="M110,420 L330,420 L570,180 L790,180" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" style="stroke:#0b6cf0;"/>
         <!-- RA(하단우, y420, 수평) -> 45도 대각선으로 소자 중심(450,300) 관통 -> EA(상단좌, y180, 수평) -->
         <path d="M790,420 L570,420 L330,180 L110,180" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" style="stroke:#d97706;"/>
+        </g>
+        <!-- 순환청정: RA -> 11번 댐퍼 통과 -> OA 경로 합류 -> 소자 -> SA. 기본은 숨김, 외기청정의 주황 화살표와 동일한 스타일 -->
+        <g id="flowCirculate" style="display:none;">
+        <path d="M790,420 L650,420 C580,420 500,440 450,444 C400,444 350,435 330,420 L570,180 L790,180" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" style="stroke:url(#circGrad);"/>
+        </g>
 
         <!-- heat exchange element: 45도 회전된 마름모, 2x2 분할선으로 4분할 표현 -->
         <g class="diagram-clickable diagram-item-1" style="cursor:pointer;" onclick="jumpToLegend(1)">
@@ -1066,22 +1101,22 @@
 
         <!-- OA / EA (실외측, 좌) / SA / RA (실내측, 우) 포트 -->
         <rect x="86" y="410" width="14" height="20" class="diagram-port-cap"/>
-        <line x1="125" y1="420" x2="161" y2="420" marker-end="url(#arrBlue)" style="stroke:#0b6cf0;stroke-width:12;"/>
+        <line id="portArrowOA" x1="125" y1="420" x2="161" y2="420" marker-end="url(#arrBlue)" style="stroke:#0b6cf0;stroke-width:12;"/>
         <text x="93" y="448" text-anchor="middle" class="diagram-label" style="font-size:14px;">OA</text>
         <text x="93" y="461" text-anchor="middle" class="diagram-sublabel" style="font-size:10px;">외기 도입(실외)</text>
 
         <rect x="86" y="170" width="14" height="20" class="diagram-port-cap"/>
-        <line x1="161" y1="180" x2="125" y2="180" marker-end="url(#arrOrange)" style="stroke:#d97706;stroke-width:12;"/>
+        <line id="portArrowEA" x1="161" y1="180" x2="125" y2="180" marker-end="url(#arrOrange)" style="stroke:#d97706;stroke-width:12;"/>
         <text x="93" y="152" text-anchor="middle" class="diagram-label" style="font-size:14px;">EA</text>
         <text x="93" y="139" text-anchor="middle" class="diagram-sublabel" style="font-size:10px;">배기 배출(실외)</text>
 
         <rect x="800" y="170" width="14" height="20" class="diagram-port-cap"/>
-        <line x1="739" y1="180" x2="775" y2="180" marker-end="url(#arrBlue)" style="stroke:#0b6cf0;stroke-width:12;"/>
+        <line id="portArrowSA" x1="739" y1="180" x2="775" y2="180" marker-end="url(#arrBlue)" style="stroke:#0b6cf0;stroke-width:12;"/>
         <text x="807" y="152" text-anchor="middle" class="diagram-label" style="font-size:14px;">SA</text>
         <text x="807" y="139" text-anchor="middle" class="diagram-sublabel" style="font-size:10px;">급기 공급(실내)</text>
 
         <rect x="800" y="410" width="14" height="20" class="diagram-port-cap"/>
-        <line x1="775" y1="420" x2="739" y2="420" marker-end="url(#arrOrange)" style="stroke:#d97706;stroke-width:12;"/>
+        <line id="portArrowRA" x1="775" y1="420" x2="739" y2="420" marker-end="url(#arrOrange)" style="stroke:#d97706;stroke-width:12;"/>
         <text x="807" y="448" text-anchor="middle" class="diagram-label" style="font-size:14px;">RA</text>
         <text x="807" y="461" text-anchor="middle" class="diagram-sublabel" style="font-size:10px;">환기 배출(실내)</text>
 
@@ -1430,6 +1465,28 @@ function jumpToOption(seriesKey, seg){
   field.classList.add('field-glow');
   clearTimeout(field._glowTimer);
   field._glowTimer = setTimeout(()=>field.classList.remove('field-glow'), 2200);
+}
+
+let diagramFlowMode = 'outdoor';
+function toggleFlowMode(){
+  const outdoor = document.getElementById('flowOutdoor');
+  const circulate = document.getElementById('flowCirculate');
+  const btn = document.getElementById('flowModeBtn');
+  const oaArrow = document.getElementById('portArrowOA');
+  const eaArrow = document.getElementById('portArrowEA');
+  const saArrow = document.getElementById('portArrowSA');
+  if(!outdoor || !circulate || !btn) return;
+  diagramFlowMode = diagramFlowMode === 'outdoor' ? 'circulate' : 'outdoor';
+  const showCirculate = diagramFlowMode === 'circulate';
+  outdoor.style.display = showCirculate ? 'none' : '';
+  circulate.style.display = showCirculate ? '' : 'none';
+  btn.textContent = showCirculate ? '외기청정 경로 보기' : '순환청정 경로 보기';
+  if(oaArrow) oaArrow.style.display = showCirculate ? 'none' : '';
+  if(eaArrow) eaArrow.style.display = showCirculate ? 'none' : '';
+  if(saArrow){
+    saArrow.setAttribute('marker-end', showCirculate ? 'url(#arrGreen)' : 'url(#arrBlue)');
+    saArrow.style.stroke = showCirculate ? '#16a34a' : '#0b6cf0';
+  }
 }
 
 function highlightDiagram(num){
@@ -2481,6 +2538,8 @@ document.getElementById('verifyInput').addEventListener('keydown', (e)=>{
     document.getElementById('verifyBtn').click();
   }
 });
+
+document.getElementById('flowModeBtn').addEventListener('click', toggleFlowMode);
 
 renderPanel('02');
 renderPanel('05');
