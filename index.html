@@ -1252,9 +1252,10 @@ const SERIES = {
       {seg:11, label:'필터알람 해제 Offset', options:hexOptions(0,10), default:'3'},
       {seg:15, label:'외부제어 출력 설정', options:[{value:'0',text:'Thermo on'},{value:'1',text:'Operation on'}], default:'1'},
       {seg:16, label:'먼지센서 감도', options:[{value:'2',text:'x1'},{value:'6',text:'x0.75'},{value:'A',text:'x0.5'}], default:'2',
-        note:'변경해도 표시되는 미세먼지 수치나 풍량전환 판정에 변화가 없는 것 확인 (2026/7/8)'},
+        note:'변경해도 표시되는 미세먼지 수치나 풍량전환 판정에 변화가 없는 것 확인 (2026/7/8), 정확한 역할 파악 필요'},
       {seg:18, label:'프리필터 사용시간', options:[{value:'2',text:'1000 Hr'},{value:'6',text:'2000 Hr'},{value:'7',text:'550 Hr'}], default:'7'},
-      {seg:20, label:'Drain pump 지연', options:[{value:'0',text:'사용안함'},{value:'1',text:'3분지연없음'},{value:'2',text:'3분지연있음'}], default:'2'},
+      {seg:20, label:'Drain pump 지연', options:[{value:'0',text:'사용안함'},{value:'1',text:'3분지연없음'},{value:'2',text:'3분지연있음'}], default:'2',
+        note:'0:드레인펌프 미사용, 1:드레인펌프 사용, 2:드레인펌프 사용 및 동작 정지 3분 지연 (잔수를 확실히 제거하기 위해 3분 더 동작)'},
     ]
   },
   '05': {
